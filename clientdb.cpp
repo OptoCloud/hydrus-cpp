@@ -1,8 +1,8 @@
 #include "clientdb.h"
 
-#include <iostream>
-ClientDB::ClientDB(const std::string& dbPath)
+#include <QDebug>
+ClientDB::ClientDB(const char* dbPath)
 {
-    std::cout << sqlite3_open(dbPath.c_str(), &m_db) << std::endl;
-    std::cout << sqlite3_close(m_db) << std::endl;
+    qDebug() << sqlite3_open(dbPath, &m_db);
+    qDebug() << sqlite3_close(m_db);
 }
