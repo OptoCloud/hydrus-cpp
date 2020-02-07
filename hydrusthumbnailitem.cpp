@@ -5,7 +5,7 @@ HydrusThumbnailItem::HydrusThumbnailItem(const QUuid& id) : QGraphicsPixmapItem(
 	m_id = id;
 }
 
-QUuid HydrusThumbnailItem::Id() const
+QUuid HydrusThumbnailItem::mediaId() const
 {
 	return m_id;
 }

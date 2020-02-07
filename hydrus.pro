@@ -1,8 +1,12 @@
-QT       += core gui multimedia multimediawidgets
+QT       += core gui sql multimedia multimediawidgets
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++17
+
+LIBS += -ldl
+QMAKE_CXXFLAGS += -lpthread -ldl
+QMAKE_CXXFLAGS_RELEASE += -O3
 
 # The following define makes your compiler emit warnings if you use
 # any Qt feature that has been marked deprecated (the exact warnings
@@ -24,9 +28,7 @@ SOURCES += \
     hydrusthumbnailview.cpp \
     hydrusvideo.cpp \
     main.cpp \
-    mainwindow.cpp \
-    SQLite\\shell.c \
-    SQLite\\sqlite3.c \
+    mainwindow.cpp
 
 HEADERS += \
     clientdb.h \
@@ -36,8 +38,7 @@ HEADERS += \
     hydrusthumbnailitem.h \
     hydrusthumbnailview.h \
     hydrusvideo.h \
-    mainwindow.h \
-    SQLite/sqlite3.h
+    mainwindow.h
 
 FORMS += \
     mainwindow.ui

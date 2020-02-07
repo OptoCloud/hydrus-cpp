@@ -1,8 +1,45 @@
 #include "clientdb.h"
 
 #include <QDebug>
-ClientDB::ClientDB(const char* dbPath)
+#include <QSqlError>
+#include <QtSql/QSqlDriver>
+#include <QtSql/QSqlDatabase>
+
+ClientDB* ClientDB::Open(const QString& path)
 {
-    qDebug() << sqlite3_open(dbPath, &m_db);
-    qDebug() << sqlite3_close(m_db);
+	for (QString str : QSqlDatabase::drivers())
+		qDebug() << str;
+
+	QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+	if (!db.isValid())
+	{
+		qDebug() << "Can't open database: " << db.lastError();
+		db.close();
+		return nullptr;
+	}
+	db.setDatabaseName(":memory:");
+	db.setUserName("");
+	db.setPassword("");
+	db.setHostName("???");
+	db.setPort(0);
+	db.setConnectOptions("???");
+	db.open();
+	if (!db.isValid())
+	{
+		qDebug() << "Can't open database: " << db.lastError();
+		db.close();
+		return nullptr;
+	}
+
+	return new ClientDB(db);
+}
+
+ClientDB::ClientDB(QSqlDatabase db)
+{
+	m_db = db;
+}
+
+ClientDB::~ClientDB()
+{
+	m_db.close();
 }

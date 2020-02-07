@@ -10,7 +10,7 @@ class HydrusThumbnailItem : public QGraphicsPixmapItem
 public:
     HydrusThumbnailItem(const QUuid& itemId);
 
-	QUuid Id() const;
+	QUuid mediaId() const;
 protected:
 	// Context menu
 	void contextMenuEvent(QGraphicsSceneContextMenuEvent *event) override;

@@ -1,14 +1,16 @@
 #ifndef CLIENTDB_H
 #define CLIENTDB_H
 
-#include <SQLite/sqlite3.h>
-
+#include <QtSql/QSqlDatabase>
 class ClientDB
 {
 public:
-    ClientDB(const char* dbPath);
+	static ClientDB* Open(const QString& path);
+	~ClientDB();
 private:
-    sqlite3* m_db = nullptr;
+	ClientDB(QSqlDatabase db);
+
+	QSqlDatabase m_db;
 };
 
 #endif // CLIENTDB_H
