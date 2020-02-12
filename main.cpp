@@ -15,44 +15,48 @@
 #include <opencv2/core.hpp>
 #include <opencv4/opencv2/img_hash/phash.hpp>
 #elif _WIN32
+#else
+#error "Unsupported OS!"
 #endif
 
-#define IMAGE_DIR "D:\\MEDIA LIBRARY\\nature\\" // "../"
+#define IMAGE_DIR "../" // "D:\\MEDIA LIBRARY\\nature\\"
 
-int OpenCV_pHash(const QImage& src, uint64_t& hash)
-{
+bool OpenCV_pHash(const QImage& src, uint64_t& hash)
+{	
 	if (src.isNull())
-		return -1;
+		return false;
 
 	try {
-		QImage img_888;
+		QImage rgb888;
 
 		// Make copy of image (Unkown if nessecary)
 		if (src.format() == QImage::Format_RGB888) {
-			img_888 = src;
+			rgb888 = src;
 		} else {
-			img_888 = src.convertToFormat(QImage::Format_RGB888);
+			rgb888 = src.convertToFormat(QImage::Format_RGB888);
 		}
 
 		// Convert QImage to OpenCV::Mat
-		cv::Mat imageMat(img_888.height(), img_888.width(), CV_8UC3, (uint8_t*)img_888.bits(), img_888.bytesPerLine());
+		cv::Mat imageMat(rgb888.height(), rgb888.width(), CV_8UC3, (uint8_t*)rgb888.constBits(), rgb888.bytesPerLine());
 
-		cv::Mat out(imageMat.rows, imageMat.cols, imageMat.type());
-		cv::img_hash::pHash(imageMat, out);
+		// Perform hashing
+		cv::Mat hashMatrix;
+		cv::img_hash::pHash(imageMat, hashMatrix);
 
-		if (out.rows * out.cols != 8)
-			return -1;
+		// If hash is zero
+		if (hashMatrix.rows * hashMatrix.cols <= 0)
+			return false;
 
-		memcpy(&hash, out.data, 8);
-		return 0;
+		memcpy(&hash, hashMatrix.data, hashMatrix.rows*hashMatrix.cols);
+		return true;
 	} catch (cv::Exception ex) {
-		qDebug() << ex.msg.c_str();
+		qDebug() << "OpenCV_pHash error:" << ex.msg.c_str();
 	} catch (std::exception ex) {
-		qDebug() << ex.what();
+		qDebug() << "OpenCV_pHash error:" << ex.what();
 	} catch (int ex) {
-		qDebug() << "Error:" << ex;
+		qDebug() << "OpenCV_pHash error:" << "Error:" << ex;
 	}
-	return -1;
+	return false;
 }
 
 int main(int argc, char *argv[])
@@ -76,8 +80,8 @@ int main(int argc, char *argv[])
 		if (!pixMap.isNull())
 		{
 			uint64_t hash = 0;
-			OpenCV_pHash(pixMap.toImage(), hash);
-			qDebug() << hash;
+			if (OpenCV_pHash(pixMap.toImage(), hash))
+				qDebug() << "pHash:" << hash;
 
 			qreal x = (i%12) * 150;
 			qreal y = (i/12) * 150;
@@ -103,6 +107,7 @@ int main(int argc, char *argv[])
 #else
 	ClientDB* db = ClientDB::Open(Some path here);
 #endif
+
 
 	return a.exec();
 }
