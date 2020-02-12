@@ -5,16 +5,19 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 CONFIG += c++17
 
 unix:!macx {
-    LIBS += -ldl -ljpeg
-    QMAKE_CXXFLAGS += -lpthread -ldl
+    # OpenCV
+    LIBS += -L/usr/lib -lopencv_core -lopencv_img_hash
 
+    # Threading
+    QMAKE_CXXFLAGS += -lpthread
+
+    # Optimization
     Release {
-        QMAKE_LFLAGS_RELEASE -= -O1
-        QMAKE_LFLAGS_RELEASE -= -O2
-        QMAKE_CXXFLAGS_RELEASE -= -O1
-        QMAKE_CXXFLAGS_RELEASE -= -O2
         QMAKE_CXXFLAGS_RELEASE += -O3
     }
+}
+win32 {
+
 }
 
 # The following define makes your compiler emit warnings if you use
@@ -56,14 +59,3 @@ FORMS += \
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
-
-# Libraries
-INCLUDEPATH += $$PWD/libs
-DEPENDPATH += $$PWD/libs
-
-# Linux
-unix:!macx {
-    LIBS += -L$$PWD/libs/ -lpHash -lpng
-    PRE_TARGETDEPS += $$PWD/libs/linux_libpHash.a
-    PRE_TARGETDEPS += $$PWD/libs/linux_libpng.a
-}
