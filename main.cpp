@@ -13,6 +13,8 @@
 #include <clientdb.h>
 #include <qmath.h>
 
+#include <opencv4/opencv2/imgcodecs.hpp>
+
 #include "imageutils.h"
 
 #define IMAGE_DIR "../sampleImages/"
@@ -46,10 +48,11 @@ int main(int argc, char *argv[])
 	int i = 0;
 	for (auto file : list)
 	{
+
 		auto image = QImage("thumbs/"/*IMAGE_DIR*/ + file);
 		if (!image.isNull())
 		{
-			//auto cvImg = ImageUtils::QImageToCVMat(image);
+			auto cvImg = ImageUtils::QImageToCVMat(image);
 			//uint64_t pHash = ImageUtils::PHash(cvImg);
 			//qDebug() << pHash;
 
@@ -88,4 +91,50 @@ int main(int argc, char *argv[])
 
 
 	return a.exec();
+}
+
+// Different ways to read QImage, QPixmap, and cv::Mat at the same time (BENCHMARK THESE)
+bool method1(const QString& fileName, const char *format = nullptr)
+{
+	// Open file
+	QFile file(fileName);
+	if (!file.open(QIODevice::ReadOnly))
+		return false;
+
+	// Get file data
+	QByteArray byteArray = file.readAll();
+	file.close();
+
+	// Get QImage
+	QImage qImage = QImage::fromData(byteArray, format);
+	if (qImage.isNull())
+		return false;
+
+	// Get QPixmap
+	QPixmap qPixmap = QPixmap::fromImage(qImage);
+
+	// Get cv::Mat
+	cv::Mat cvImage = cv::imdecode(cv::Mat(1, byteArray.size(), CV_8UC3, byteArray.data()), cv::IMREAD_UNCHANGED);
+	if (cvImage.data == nullptr)
+		return false;
+}
+
+bool method2(const QString& fileName, const char *format = nullptr)
+{
+	// Get QImage
+	QImage qImage = QImage(fileName, format);
+	if (qImage.isNull())
+		return false;
+
+	// Get QPixmap
+	QPixmap qPixmap = QPixmap::fromImage(qImage);
+
+	// Get cv::Mat
+	cv::Mat cvImage;
+	if (qImage.format() == QImage::Format_RGB888) {
+		cvImage = cv::Mat(qImage.height(), qImage.width(), CV_8UC3, (uint8_t*)qImage.constBits(), qImage.bytesPerLine());
+	} else {
+		QImage rgb888 = qImage.convertToFormat(QImage::Format_RGB888);
+		cvImage = cv::Mat(rgb888.height(), rgb888.width(), CV_8UC3, (uint8_t*)rgb888.constBits(), rgb888.bytesPerLine());
+	}
 }
