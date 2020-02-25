@@ -8,7 +8,8 @@ public:
 	static ClientDB* Open(const QString& path);
 	~ClientDB();
 private:
-	ClientDB(QSqlDatabase db);
+	ClientDB() = delete;
+	ClientDB(const QSqlDatabase& db);
 
 	QSqlDatabase m_db;
 };

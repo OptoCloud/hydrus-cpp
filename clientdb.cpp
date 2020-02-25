@@ -7,9 +7,6 @@
 
 ClientDB* ClientDB::Open(const QString& path)
 {
-	for (QString str : QSqlDatabase::drivers())
-		qDebug() << str;
-
 	QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
 	if (!db.isValid())
 	{
@@ -34,7 +31,7 @@ ClientDB* ClientDB::Open(const QString& path)
 	return new ClientDB(db);
 }
 
-ClientDB::ClientDB(QSqlDatabase db)
+ClientDB::ClientDB(const QSqlDatabase& db)
 {
 	m_db = db;
 }

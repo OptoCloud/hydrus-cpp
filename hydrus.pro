@@ -6,7 +6,8 @@ CONFIG += c++17
 
 unix:!macx {
     # OpenCV
-    LIBS += -L/usr/lib -lopencv_core -lopencv_img_hash
+    INCLUDEPATH += /usr/include/opencv4
+    LIBS += -L/usr/lib -L/usr/local -lopencv_core -lopencv_img_hash -lz -ldl
 
     # Threading
     QMAKE_CXXFLAGS += -lpthread
@@ -40,7 +41,8 @@ SOURCES += \
     hydrusthumbnailview.cpp \
     hydrusvideo.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    imageutils.cpp
 
 HEADERS += \
     clientdb.h \
@@ -50,7 +52,8 @@ HEADERS += \
     hydrusthumbnailitem.h \
     hydrusthumbnailview.h \
     hydrusvideo.h \
-    mainwindow.h
+    mainwindow.h \
+    imageutils.h
 
 FORMS += \
     mainwindow.ui
