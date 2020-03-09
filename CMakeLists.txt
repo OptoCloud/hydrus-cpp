@@ -25,11 +25,7 @@ find_package(Eigen3 REQUIRED)
 if (NOT Eigen3_FOUND)
     message(FATAL_ERROR "No Eigen3 installation found, aborting")
 endif()
-message("Found Eigen ${Eigen3_VERSION}")
-message("Includes:\t\t${Eigen3_INCLUDE_DIRS}")
-message("Libraries:\t\t${Eigen3_LIBS}\n")
-list(APPEND LIBRARIES ${Eigen3_LIBS})
-list(APPEND INCLUDE_DIRS ${Eigen3_DIRS})
+message("Found Eigen ${Eigen3_VERSION}\n")
 
 # ---Qt---
 find_package(Qt5 COMPONENTS Core Gui OpenGL Test Sql Multimedia MultimediaWidgets REQUIRED)
