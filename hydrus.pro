@@ -5,28 +5,26 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 CONFIG += c++17
 
 unix:!macx {
-    # OpenCV
+    # Include paths
     INCLUDEPATH += /usr/include/opencv4
-    LIBS += -L/usr/lib \
-            -L/usr/local \
-            -L/usr/local/lib \
-            -L/usr/local/lib/opencv4/3rdparty \
-            -lopencv_highgui \
-            -lopencv_img_hash \
-            -lopencv_imgcodecs \
-            -lopencv_imgproc \
-            -lopencv_core \
-            -lpng16 \
-            -lz \
-            -ldl \
-            -ljpeg \
-            -ltiff \
-            -ltbb \
-            -lippiw \
-            -lippicv \
-            -lIlmImf \
-            -llibjasper \
-            -llibwebp
+
+    # Library paths
+    LIBS += -L/usr/lib -L/usr/local -L/usr/local/lib -L/usr/local/lib/opencv4/3rdparty
+
+    # OpenCV libraries
+    LIBS += -lopencv_highgui -lopencv_img_hash -lopencv_imgcodecs -lopencv_imgproc -lopencv_core
+
+    # ZLib
+    LIBS += -lz
+
+    # OpenEXR library
+    LIBS += -lIlmImf
+
+    # Image libraries
+    LIBS += -lpng16 -ljpeg -ltiff -llibjasper -llibwebp
+
+    # Intel libraries
+    LIBS += -ltbb -lippiw -lippicv
 
     # Optimization
     CONFIG(release, debug|release) {
