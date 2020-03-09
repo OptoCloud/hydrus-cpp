@@ -26,6 +26,9 @@ unix:!macx {
     # Intel libraries
     LIBS += -ltbb -lippiw -lippicv
 
+    # Dynamic linking library
+    LIBS += -ldl
+
     # Optimization
     CONFIG(release, debug|release) {
       CONFIG -= -O1
@@ -77,9 +80,6 @@ HEADERS += \
     imageutils.h \
     mainwindow.h \
     sha256.h
-
-FORMS += \
-    mainwindow.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
