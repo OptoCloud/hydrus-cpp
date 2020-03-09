@@ -4,27 +4,22 @@
 #include <QSqlError>
 #include <QtSql/QSqlDriver>
 #include <QtSql/QSqlDatabase>
+#include <QSqlQuery>
+
+const QString DRIVER("QSQLITE");
 
 ClientDB* ClientDB::Open(const QString& path)
 {
-	QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
-	if (!db.isValid())
-	{
-		qDebug() << "Can't open database: " << db.lastError();
-		db.close();
+	if(!QSqlDatabase::isDriverAvailable(DRIVER))
 		return nullptr;
-	}
-	db.setDatabaseName(":memory:");
-	db.setUserName("");
-	db.setPassword("");
-	db.setHostName("???");
-	db.setPort(0);
-	db.setConnectOptions("???");
+
+	QSqlDatabase db = QSqlDatabase::addDatabase(DRIVER);
+	db.setDatabaseName(path);
 	db.open();
-	if (!db.isValid())
+
+	if (!db.open())
 	{
 		qDebug() << "Can't open database: " << db.lastError();
-		db.close();
 		return nullptr;
 	}
 

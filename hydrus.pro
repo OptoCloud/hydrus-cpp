@@ -1,4 +1,4 @@
-QT       += core gui sql multimedia multimediawidgets
+QT += core gui opengl testlib sql multimedia multimediawidgets
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -7,14 +7,37 @@ CONFIG += c++17
 unix:!macx {
     # OpenCV
     INCLUDEPATH += /usr/include/opencv4
-    LIBS += -L/usr/lib -L/usr/local -lopencv_core -lopencv_img_hash -lz -ldl
-
-    # Threading
-    QMAKE_CXXFLAGS += -lpthread
+    LIBS += -L/usr/lib \
+            -L/usr/local \
+            -L/usr/local/lib \
+            -L/usr/local/lib/opencv4/3rdparty \
+            -lopencv_highgui \
+            -lopencv_img_hash \
+            -lopencv_imgcodecs \
+            -lopencv_imgproc \
+            -lopencv_core \
+            -lpng16 \
+            -lz \
+            -ldl \
+            -ljpeg \
+            -ltiff \
+            -ltbb \
+            -lippiw \
+            -lippicv \
+            -lIlmImf \
+            -llibjasper \
+            -llibwebp
 
     # Optimization
-    Release {
-        QMAKE_CXXFLAGS_RELEASE += -O3
+    CONFIG(release, debug|release) {
+      CONFIG -= -O1
+      CONFIG -= -O2
+      CONFIG *= -O3
+    }
+    CONFIG(debug, debug|release) {
+      CONFIG -= -O1
+      CONFIG -= -O2
+      CONFIG -= -O3
     }
 }
 win32 {
@@ -40,9 +63,10 @@ SOURCES += \
     hydrusthumbnailitem.cpp \
     hydrusthumbnailview.cpp \
     hydrusvideo.cpp \
+    imageutils.cpp \
     main.cpp \
     mainwindow.cpp \
-    imageutils.cpp
+    sha256.cpp
 
 HEADERS += \
     clientdb.h \
@@ -52,8 +76,9 @@ HEADERS += \
     hydrusthumbnailitem.h \
     hydrusthumbnailview.h \
     hydrusvideo.h \
+    imageutils.h \
     mainwindow.h \
-    imageutils.h
+    sha256.h
 
 FORMS += \
     mainwindow.ui

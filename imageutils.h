@@ -2,16 +2,22 @@
 #define IMAGEUTILS_H
 
 #include <QImage>
+#include <QPixmap>
 #include <opencv4/opencv2/core.hpp>
 
-namespace ImageUtils {
-	static cv::Mat QImageToCVMat(const QImage& image);
-	static uint64_t AverageHash(const cv::Mat& imgMat);
-	static uint64_t BlockMeanHash(const cv::Mat& imgMat);
-	static uint64_t PerceptualHash(const cv::Mat& imgMat);
-	static uint64_t ColorMomentHash(const cv::Mat& imgMat);
-	static uint64_t MarrHildrethHash(const cv::Mat& imgMat);
-	static uint64_t RadialVarienceHash(const cv::Mat& imgMat);
+namespace ImageUtils
+{
+struct HASH256
+{
+	uint8_t* data;
+};
+
+uint64_t PHash_Compute(const QImage& image);
+uint16_t HammingDistance(uint64_t hash1, uint64_t hash2);
+QByteArray Sha256_Compute(const QImage& image);
 }
+
+bool DecodeImageTest(const QString& path);
+bool Test(const QImage& inputImage, uint64_t& hash);
 
 #endif // IMAGEUTILS_H
