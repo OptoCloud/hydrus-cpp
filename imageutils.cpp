@@ -1,70 +1,18 @@
 #include "imageutils.h"
 
 #include <QFile>
-#include <QDebug>
 #include <bitset>
 #include <opencv2/core.hpp>
-#include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
+#include <opencv2/imgcodecs.hpp>
 
-uint64_t ImageUtils::PHash_Compute(const QImage& qtImage)
-{
-	if (qtImage.isNull())
-		return 0;
-
-	cv::Mat hash;
-	cv::Mat cvImage;
-
-	if (qtImage.format() == QImage::Format_RGB888)
-	{
-		cvImage = cv::Mat(qtImage.height(), qtImage.width(), CV_8UC3, (uint8_t*)qtImage.constBits(), qtImage.bytesPerLine());
-
-		if (cvImage.empty())
-			return 0;
-
-	}
-	else
-	{
-		QImage rgb888 = qtImage.convertToFormat(QImage::Format_RGB888);
-		cvImage = cv::Mat(rgb888.height(), rgb888.width(), CV_8UC3, (uint8_t*)rgb888.constBits(), rgb888.bytesPerLine());
-
-		if (cvImage.empty())
-			return 0;
-
-	}
-
-	if (hash.rows * hash.cols <= 0)
-		return 0;
-
-	uint64_t retval;
-	memcpy(&retval, hash.data, hash.rows*hash.cols);
-	return retval;
-}
-uint16_t ImageUtils::HammingDistance(uint64_t hash1, uint64_t hash2)
-{
-	uint64_t diff = hash1 ^ hash2;
-
-	std::bitset<64> diff_bits(diff);
-
-	return diff_bits.count();
-}
-
-#include "sha256.h"
-#include <QByteArray>
-QByteArray ImageUtils::Sha256_Compute(const QImage& image)
-{
-	Hashing::Sha256 hash;
-	hash.Update(image.constBits(), image.byteCount());
-	return hash.result();
-}
-bool PHashCust(const QByteArray& data, uint64_t& hash)
+uint64_t ImageUtils::PHash_Compute(const QByteArray& data)
 {
 	auto dataMat = cv::Mat(data.size(), 1, CV_8UC1, (char*)data.data());
 	auto image = cv::imdecode(dataMat, cv::IMREAD_UNCHANGED);
 
 	if (image.empty())
-		return false;
+		return 0;
 
 	// Remove alpha if neccesary
 	switch (image.channels()) {
@@ -109,7 +57,7 @@ bool PHashCust(const QByteArray& data, uint64_t& hash)
 	case 1:
 		break;
 	default:
-		return false;
+		return 0;
 	}
 
 	// Crunch it down
@@ -140,5 +88,24 @@ bool PHashCust(const QByteArray& data, uint64_t& hash)
 		else
 			hashBits[i] = false;
 	}
+	uint64_t hash;
 	memcpy(&hash, &hashBits, 8);
+	return hash;
+}
+uint16_t ImageUtils::HammingDistance(uint64_t hash1, uint64_t hash2)
+{
+	uint64_t diff = hash1 ^ hash2;
+
+	std::bitset<64> diff_bits(diff);
+
+	return diff_bits.count();
+}
+
+#include "sha256.h"
+#include <QByteArray>
+QByteArray ImageUtils::Sha256_Compute(const QImage& image)
+{
+	Hashing::Sha256 hash;
+	hash.Update(image.constBits(), image.byteCount());
+	return hash.result();
 }

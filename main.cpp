@@ -56,14 +56,14 @@ public:
 		f.open(QFile::ReadOnly);
 		if (!f.isOpen())
 			return;
-		QByteArray arr = f.readAll();
+		auto data = f.readAll();
 		f.close();
 
-		QImage image = QImage::fromData(arr);
+		QImage image = QImage::fromData(data);
 		if (!image.isNull())
 		{
 			qDebug() << "Processing" << path;
-			PHashCust(arr, phash);
+			phash = ImageUtils::PHash_Compute(data);
 			sha256 = ImageUtils::Sha256_Compute(image);
 		}
 	}
@@ -175,10 +175,17 @@ int main(int argc, char **argv)
 	uint64_t lastHash = 0;
 	for (auto file : list)
 	{
-		QImage qtImage(IMAGE_DIR + file);
-		if (!qtImage.isNull())
+		QFile f(file);
+		f.open(QFile::ReadOnly);
+		if (!f.isOpen())
+			continue;
+		auto data = f.readAll();
+		f.close();
+
+		QImage image = QImage::fromData(data);
+		if (!image.isNull())
 		{
-			uint64_t pHash = ImageUtils::PHash_Compute(qtImage);
+			uint64_t pHash = ImageUtils::PHash_Compute(data);
 
 			qDebug() << "pHash:   " << pHash;
 			qDebug() << "Distance:" << ImageUtils::HammingDistance(pHash, lastHash);
@@ -192,7 +199,7 @@ int main(int argc, char **argv)
 
 			qDebug() << IMAGE_DIR + file << '\n';
 
-			QPixmap thumbNail = QPixmap::fromImage(qtImage.scaled(itemWidth, itemHeight, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+			QPixmap thumbNail = QPixmap::fromImage(image.scaled(itemWidth, itemHeight, Qt::KeepAspectRatio, Qt::SmoothTransformation));
 
 			//qDebug() << pixMap.cacheKey();
 			//pixMap.save("thumbs/" + QString::number(pixMap.cacheKey()), "PNG");
