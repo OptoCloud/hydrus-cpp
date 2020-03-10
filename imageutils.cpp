@@ -3,11 +3,10 @@
 #include <QFile>
 #include <QDebug>
 #include <bitset>
-#include <opencv4/opencv2/core.hpp>
-#include <opencv4/opencv2/img_hash.hpp>
-#include <opencv4/opencv2/imgcodecs.hpp>
-#include <opencv4/opencv2/imgproc.hpp>
-#include <opencv4/opencv2/highgui.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
 
 uint64_t ImageUtils::PHash_Compute(const QImage& qtImage)
 {
@@ -24,7 +23,6 @@ uint64_t ImageUtils::PHash_Compute(const QImage& qtImage)
 		if (cvImage.empty())
 			return 0;
 
-		cv::img_hash::pHash(cvImage, hash);
 	}
 	else
 	{
@@ -34,7 +32,6 @@ uint64_t ImageUtils::PHash_Compute(const QImage& qtImage)
 		if (cvImage.empty())
 			return 0;
 
-		cv::img_hash::pHash(cvImage, hash);
 	}
 
 	if (hash.rows * hash.cols <= 0)
@@ -61,103 +58,87 @@ QByteArray ImageUtils::Sha256_Compute(const QImage& image)
 	hash.Update(image.constBits(), image.byteCount());
 	return hash.result();
 }
-bool DecodeImageTest(const QString& path)
+bool PHashCust(const QByteArray& data, uint64_t& hash)
 {
-	cv::Mat img = cv::imread(path.toStdString());
+	auto dataMat = cv::Mat(data.size(), 1, CV_8UC1, (char*)data.data());
+	auto image = cv::imdecode(dataMat, cv::IMREAD_UNCHANGED);
 
-	cv::imshow("eee", img);
-}
-bool Test(const QImage& inputImage, uint64_t& hash)
-{
-	// Return if image is empty
-	if (inputImage.isNull())
+	if (image.empty())
 		return false;
 
-	cv::Mat grayScale;
-
-	/*QImage image;
-	if (inputImage.height() > 1024 || inputImage.width() > 1024)
-		image = inputImage.scaled(1024, 1024, Qt::KeepAspectRatio);
-	else
-		image = inputImage;*/
-
-
-	// Convert to uint8 pic
-	/*switch (inputImage.format()) {
-	case QImage::Format_Grayscale8:
-		break;
-	case QImage::Format_RGB444:
-	case QImage::Format_RGB555:
-	case QImage::Format_RGB666:
-	case QImage::Format_RGB888:
-	case QImage::Format_RGB16:
-	case QImage::Format_RGB30:
-	case QImage::Format_RGB32:
-		image = image.convertToFormat(QImage::Format_Grayscale8);
-		grayScale = cv::Mat(image.height(), image.width(), CV_8UC1, (uint8_t*)image.constBits(), image.bytesPerLine());
-		break;
-	case QImage::Format_ARGB32:
-		image = image.convertToFormat(QImage::Format_RGBA8888);
-	case QImage::Format_RGBA8888:
+	// Remove alpha if neccesary
+	switch (image.channels()) {
+	case 4:
 	{
-		uint8_t* data = image.bits();
-		uint32_t size = image.byteCount();
+		// Resize to conserve ram
+		int maxDim = std::max(image.rows, image.cols);
+		if (maxDim > 1024)
+		{
+			float ratio = float(1024)/float(maxDim);
 
-		QByteArray arr((char*)data, size);
-		qDebug() << arr.toHex();
+			cv::resize(image, image, cv::Size(0, 0), ratio, ratio);
+		}
+		cv::Size size(image.cols, image.rows);
 
-		grayScale = cv::Mat(image.height(), image.width(), CV_8UC1, (uint8_t*)image.constBits(), image.bytesPerLine());
+		// Get alpha
+		cv::Mat alpha;
+		cv::extractChannel(image, alpha, 3);
+		alpha.convertTo(alpha, CV_32F);
+		alpha /= 255.;
+
+		// Convert to grayscale (RGB was done intentionally)
+		cv::Mat grayscale;
+		cv::cvtColor(image, grayscale, cv::COLOR_RGB2GRAY);
+		grayscale.convertTo(grayscale, CV_32FC1);
+
+		// Create white canvas
+		cv::Mat ones = cv::Mat::ones(size, CV_32FC1);
+
+		// Blend alpha with white, and set as image
+		cv::multiply(ones * 255., ones - alpha, image);
+
+		// Blend alpha with grayscale and add to output
+		cv::multiply(grayscale,alpha,grayscale);
+		image += grayscale;
 		break;
 	}
+	case 3:
+		cv::cvtColor(image, image, cv::COLOR_RGB2GRAY);
+		image.convertTo(image, CV_32F);
+		break;
+	case 1:
+		break;
 	default:
-		// TODO
-		break;
-	}
-
-	uint8_t* data = image.bits();
-	uint32_t size = image.byteCount();
-
-	// Convert to greyscale
-	switch (inputImage.format()) {
-	case QImage::Format_RGB444:
-	case QImage::Format_RGB555:
-	case QImage::Format_RGB666:
-	case QImage::Format_RGB888:
-	case QImage::Format_RGB16:
-	case QImage::Format_RGB30:
-	case QImage::Format_RGB32:
-	{
-		image = image.convertToFormat(QImage::Format_Grayscale8);
-		data = image.bits();
-	}
-	case QImage::Format_Grayscale8:
-	{
-		grayScale = cv::Mat(image.height(), image.width(), CV_8UC1, (uint8_t*)image.constBits(), image.bytesPerLine());
-		break;
-	}
-	case QImage::Format_ARGB32:
-	{
-		image = inputImage.convertToFormat(QImage::Format_RGBA8888);
-		image.bits();
-	}
-	case QImage::Format_RGBA8888:
-	{
-		cv::Mat tmp = cv::Mat(image.height(), image.width(), CV_8UC4, (uint8_t*)image.constBits(), image.bytesPerLine());
-
-		grayScale = cv::Mat(image.height(), image.width(), CV_8UC1, (uint8_t*)image.constBits(), image.bytesPerLine());
-		break;
-	}
-	default:
-		// TODO
-		break;
-	}
-
-	if (grayScale.empty())
 		return false;
+	}
 
-	cv::Mat hashMat;
-	cv::img_hash::pHash(grayScale, hashMat);
+	// Crunch it down
+	cv::resize(image,image,cv::Size(32,32), cv::INTER_AREA);
 
-	memcpy(&hash, hashMat.data, hashMat.rows*hashMat.cols);
-	return true;*/
+	// Convert to dct
+	cv::dct(image, image);
+
+	// Get region of intrest
+	cv::Mat roi = image(cv::Rect(0,0,8,8));
+	roi.copyTo(image);
+
+	// Get mean color of roi
+	cv::Scalar meanColor = cv::mean(image.reshape(1,1)(cv::Rect(1,0,63,1)));
+	cv::Mat meanMat = cv::Mat(8,8,CV_32F,meanColor);
+
+	// Convert roi to bool map
+	cv::Mat dct_bool = image > meanMat;
+
+	// Convert to uint64
+	QByteArray byteHash((char*)dct_bool.data, 64);
+	QString hex = byteHash.toHex();
+	std::bitset<64> hashBits;
+	for (int i = 0; i < 64; ++i)
+	{
+		if (hex[i] == 'f')
+			hashBits[i] = true;
+		else
+			hashBits[i] = false;
+	}
+	memcpy(&hash, &hashBits, 8);
 }

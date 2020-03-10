@@ -17,9 +17,8 @@
 #include <QThreadPool>
 #include <QMutex>
 
-#include <opencv4/opencv2/core.hpp>
-#include <opencv4/opencv2/img_hash.hpp>
-#include <opencv4/opencv2/imgcodecs.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/imgcodecs.hpp>
 
 #include "imageutils.h"
 
@@ -53,14 +52,19 @@ public:
 
 	void run()
 	{
-		QImage image(path);
+		QFile f(path);
+		f.open(QFile::ReadOnly);
+		if (!f.isOpen())
+			return;
+		QByteArray arr = f.readAll();
+		f.close();
+
+		QImage image = QImage::fromData(arr);
 		if (!image.isNull())
 		{
-			qDebug() << "Processing" << path << "Format:" << image.format() << "HasAlpha:" << image.hasAlphaChannel();
-			DecodeImageTest(path);
-			Test(image, phash);
-			//phash = ImageUtils::PHash_Compute(image);
-			//sha256 = ImageUtils::Sha256_Compute(image);
+			qDebug() << "Processing" << path;
+			PHashCust(arr, phash);
+			sha256 = ImageUtils::Sha256_Compute(image);
 		}
 	}
 };
@@ -85,7 +89,7 @@ bool compareRelations(const Relation &v1, const Relation &v2)
 
 int main(int argc, char **argv)
 {
-	int nproc = 8;//QThread::idealThreadCount();
+	int nproc = QThread::idealThreadCount();
 	QThreadPool threadPool;
 	threadPool.setMaxThreadCount(nproc);
 
@@ -106,6 +110,9 @@ int main(int argc, char **argv)
 	QDir(QDir::currentPath() + "/db").mkdir("files");
 
 	auto list = dir.entryList(QDir::Filter::Files, QDir::SortFlag::Name); // HYDRUS_IMAGETYPES
+
+	if (list.length() == 0)
+		return EXIT_SUCCESS;
 
 	int contentHeight = 125;
 	int contentWidth = 150;

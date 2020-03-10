@@ -93,9 +93,9 @@ list(APPEND LIBRARIES z)
 # OpenEXR
 list(APPEND LIBRARIES IlmImf)
 # Image parsing and processing
-list(APPEND LIBRARIES png16 jpeg tiff libjasper libwebp)
+list(APPEND LIBRARIES png16 jpeg tiff)
 # Intel
-list(APPEND LIBRARIES tbb ippiw ippicv)
+list(APPEND LIBRARIES tbb)
 # Dynamic linking
 list(APPEND LIBRARIES dl)
 
