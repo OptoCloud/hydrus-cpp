@@ -42,7 +42,7 @@ static const QStringList SupportedMiscsQt = {"*.swf","*.pdf","*.psd","*.zip","*.
 class Image : public QRunnable
 {
 public:
-	Image(QString path)
+	Image(const QString& path)
 	{
 		this->path = path;
 	}
@@ -52,6 +52,7 @@ public:
 
 	void run()
 	{
+		// Open file
 		QFile f(path);
 		f.open(QFile::ReadOnly);
 		if (!f.isOpen())
@@ -59,19 +60,22 @@ public:
 		auto data = f.readAll();
 		f.close();
 
-		QImage image = QImage::fromData(data);
-		if (!image.isNull())
+		// Parse as cv::Mat
+		auto dataMat = cv::Mat(data.size(), 1, CV_8UC1, (char*)data.data());
+		auto image = cv::imdecode(dataMat, cv::IMREAD_UNCHANGED);
+
+		// Do processing
+		if (!image.empty())
 		{
-			qDebug() << "Processing" << path;
-			phash = ImageUtils::PHash_Compute(data);
-			sha256 = ImageUtils::Sha256_Compute(image);
+			phash = ImageUtils::PHash_Compute(image);
+			//sha256 = ImageUtils::Sha256_Compute(image);
 		}
 	}
 };
 
 struct Relation
 {
-	Relation(QString& name1, QString& name2, uint16_t& dist)
+	Relation(const QString& name1, const QString& name2, uint16_t dist)
 	{
 		this->name1 = name1;
 		this->name2 = name2;
@@ -124,8 +128,6 @@ int main(int argc, char **argv)
 
 	QList<QPixmap> pics;
 	int i = 0;
-	QElapsedTimer timer;
-	timer.start();
 
 	qDebug() << "Queueing images...";
 
@@ -135,13 +137,16 @@ int main(int argc, char **argv)
 		images.append(Image(IMAGE_DIR + list[i]));
 	}
 
+	QElapsedTimer timer;
+	timer.start();
 	for (uint32_t i = 0; i < images.length(); ++i)
 	{
-		threadPool.start((QRunnable*)&images[i]);
+		images[i].run();
 	}
 
 	qDebug() << "Processing...";
-	threadPool.waitForDone();
+	//threadPool.waitForDone();
+	qDebug().nospace() << "Used " << timer.elapsed() << "ms to calculate phash for " << list.length() << " images";
 
 	QList<Relation> relations;
 	qDebug() << "Computing similarities...";
@@ -185,12 +190,6 @@ int main(int argc, char **argv)
 		QImage image = QImage::fromData(data);
 		if (!image.isNull())
 		{
-			uint64_t pHash = ImageUtils::PHash_Compute(data);
-
-			qDebug() << "pHash:   " << pHash;
-			qDebug() << "Distance:" << ImageUtils::HammingDistance(pHash, lastHash);
-			lastHash = pHash;
-
 			qreal x = ((i%horItemCount)*(itemWidth+itemPadding))+itemPadding;
 			qreal y = ((i/horItemCount)*(itemHeight+itemPadding))+itemPadding;
 
@@ -213,7 +212,6 @@ int main(int argc, char **argv)
 		else
 			qDebug().nospace() << "Skipped " << IMAGE_DIR << file;
 	}
-	qDebug().nospace() << "Used " << timer.elapsed() << "ms to open " << list.length() << " images";
 
 	view->show();
 	w.setCentralWidget(view);

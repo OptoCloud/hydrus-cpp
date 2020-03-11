@@ -3,12 +3,13 @@
 
 #include <QImage>
 #include <QByteArray>
+#include <opencv/cv.h>
 
 namespace ImageUtils
 {
-uint64_t PHash_Compute(const QByteArray& data);
-uint16_t HammingDistance(uint64_t hash1, uint64_t hash2);
-QByteArray Sha256_Compute(const QImage& image);
+uint64_t PHash_Compute(const cv::Mat& image);
+QByteArray Sha256_Compute(const cv::Mat& image);
+uint64_t HammingDistance(uint64_t hash1, uint64_t hash2);
 }
 
 #endif // IMAGEUTILS_H

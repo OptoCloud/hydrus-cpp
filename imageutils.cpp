@@ -1,18 +1,16 @@
 #include "imageutils.h"
 
 #include <QFile>
+#include <QDebug>
 #include <bitset>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 
-uint64_t ImageUtils::PHash_Compute(const QByteArray& data)
+uint64_t ImageUtils::PHash_Compute(const cv::Mat& inputImage)
 {
-	auto dataMat = cv::Mat(data.size(), 1, CV_8UC1, (char*)data.data());
-	auto image = cv::imdecode(dataMat, cv::IMREAD_UNCHANGED);
-
-	if (image.empty())
-		return 0;
+	cv::Mat image;
+	inputImage.copyTo(image);
 
 	// Remove alpha if neccesary
 	switch (image.channels()) {
@@ -67,8 +65,7 @@ uint64_t ImageUtils::PHash_Compute(const QByteArray& data)
 	cv::dct(image, image);
 
 	// Get region of intrest
-	cv::Mat roi = image(cv::Rect(0,0,8,8));
-	roi.copyTo(image);
+	image(cv::Rect(0,0,8,8)).copyTo(image);
 
 	// Get mean color of roi
 	cv::Scalar meanColor = cv::mean(image.reshape(1,1)(cv::Rect(1,0,63,1)));
@@ -78,21 +75,17 @@ uint64_t ImageUtils::PHash_Compute(const QByteArray& data)
 	cv::Mat dct_bool = image > meanMat;
 
 	// Convert to uint64
-	QByteArray byteHash((char*)dct_bool.data, 64);
-	QString hex = byteHash.toHex();
-	std::bitset<64> hashBits;
-	for (int i = 0; i < 64; ++i)
+	uint8_t* ptr = dct_bool.ptr<uint8_t>(0) + 63;
+	uint64_t hash = 0;
+	for (uint64_t i = 0; i < 64; ++i)
 	{
-		if (hex[i] == 'f')
-			hashBits[i] = true;
-		else
-			hashBits[i] = false;
+		if (*--ptr == 0xFF)
+			hash |= 1 << i;
 	}
-	uint64_t hash;
-	memcpy(&hash, &hashBits, 8);
+
 	return hash;
 }
-uint16_t ImageUtils::HammingDistance(uint64_t hash1, uint64_t hash2)
+uint64_t ImageUtils::HammingDistance(uint64_t hash1, uint64_t hash2)
 {
 	uint64_t diff = hash1 ^ hash2;
 
@@ -103,9 +96,9 @@ uint16_t ImageUtils::HammingDistance(uint64_t hash1, uint64_t hash2)
 
 #include "sha256.h"
 #include <QByteArray>
-QByteArray ImageUtils::Sha256_Compute(const QImage& image)
+QByteArray ImageUtils::Sha256_Compute(const cv::Mat& image)
 {
 	Hashing::Sha256 hash;
-	hash.Update(image.constBits(), image.byteCount());
+	hash.Update(image.data, image.total() * image.elemSize());
 	return hash.result();
 }
