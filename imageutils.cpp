@@ -74,14 +74,13 @@ uint64_t ImageUtils::PHash_Compute(const cv::Mat& inputImage)
 	// Convert roi to bool map
 	cv::Mat dct_bool = image > meanMat;
 
-	// Convert to uint64
-	uint8_t* ptr = dct_bool.ptr<uint8_t>(0) + 63;
-	uint64_t hash = 0;
-	for (uint64_t i = 0; i < 64; ++i)
-	{
-		if (*--ptr == 0xFF)
-			hash |= 1 << i;
-	}
+    // Convert to uint64
+    uint8_t* ptr = dct_bool.ptr<uint8_t>(0);
+    uint64_t hash = 0;
+    for (uint64_t i = 64; i > 0;)
+    {
+        hash |= (*++ptr & 1) << --i;
+    }
 
 	return hash;
 }
