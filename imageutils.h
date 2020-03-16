@@ -3,7 +3,7 @@
 
 #include <QImage>
 #include <QByteArray>
-#include <opencv/cv.h>
+#include <opencv2/core.hpp>
 
 namespace ImageUtils
 {
