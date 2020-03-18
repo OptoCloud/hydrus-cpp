@@ -4,7 +4,13 @@ set(project hydrus)
 project(${project})
 cmake_policy(SET CMP0071 NEW)
 
-list(APPEND LIBRARY_DIRS /usr/lib /usr/local /usr/local/lib)
+if(UNIX AND NOT APPLE)
+    set(LINUX TRUE)
+endif()
+
+if (LINUX)
+    list(APPEND LIBRARY_DIRS /usr/lib /usr/local /usr/local/lib)
+endif ()
 message("\n")
 
 # ---OpenCV---
@@ -12,13 +18,12 @@ find_package(OpenCV REQUIRED)
 if (NOT OpenCV_FOUND)
     message(FATAL_ERROR "No OpenCV installation found, aborting")
 endif()
-list(APPEND OpenCV_LIBS opencv_highgui)
+list(APPEND OpenCV_LIBS)
 message("Found OpenCV ${OpenCV_VERSION}")
 message("Includes:\t\t${OpenCV_INCLUDE_DIRS}")
 message("Libraries:\t\t${OpenCV_LIBS}\n")
 list(APPEND LIBRARIES ${OpenCV_LIBS})
 list(APPEND INCLUDE_DIRS ${OpenCV_DIRS})
-list(APPEND LIBRARY_DIRS /usr/local/lib/opencv4/3rdparty)
 
 # ---Eigen---
 find_package(Eigen3 REQUIRED)
@@ -88,16 +93,20 @@ execute_process(
 )
 message("QT system dir: ${QT_SYSTEM_DIR}\n")
 
-# ZLib
-list(APPEND LIBRARIES z)
-# OpenEXR
-list(APPEND LIBRARIES IlmImf)
-# Image parsing and processing
-list(APPEND LIBRARIES png16 jpeg tiff)
-# Intel
-list(APPEND LIBRARIES tbb)
-# Dynamic linking
-list(APPEND LIBRARIES dl)
+if (LINUX)
+    # ZLib
+    list(APPEND LIBRARIES z)
+    # OpenEXR
+    list(APPEND LIBRARIES IlmImf)
+    # Image parsing and processing
+    list(APPEND LIBRARIES png16 jpeg tiff)
+    # Intel
+    list(APPEND LIBRARIES tbb)
+    # Dynamic linking
+    list(APPEND LIBRARIES dl)
+elif(WIN32)
+
+endif()
 
 set(${project}_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/clientdb.cpp
@@ -127,5 +136,6 @@ set(${project}_MOC
 include_directories(${INCLUDE_DIRS})
 link_directories(${LIBRARY_DIRS})
 add_executable(${project} main.cpp ${${project}_SOURCES} ${${project}_MOC})
+set_target_properties(${project} PROPERTIES COMPILE_FLAGS -DBUILDER_STATIC_DEFINE)
 target_link_libraries(${project} ${LIBRARIES})
 message("Building to ${CMAKE_CURRENT_BINARY_DIR}")

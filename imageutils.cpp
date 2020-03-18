@@ -32,9 +32,9 @@ uint64_t ImageUtils::PHash_Compute(const cv::Mat& inputImage)
 		alpha.convertTo(alpha, CV_32F);
 		alpha /= 255.;
 
-		// Convert to grayscale (RGB was done intentionally)
+        // Convert to grayscale
 		cv::Mat grayscale;
-		cv::cvtColor(image, grayscale, cv::COLOR_RGB2GRAY);
+        cv::cvtColor(image, grayscale, cv::COLOR_BGR2GRAY);
 		grayscale.convertTo(grayscale, CV_32FC1);
 
 		// Create white canvas
@@ -49,7 +49,7 @@ uint64_t ImageUtils::PHash_Compute(const cv::Mat& inputImage)
 		break;
 	}
 	case 3:
-		cv::cvtColor(image, image, cv::COLOR_RGB2GRAY);
+        cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
 		image.convertTo(image, CV_32F);
 		break;
 	case 1:
@@ -79,7 +79,7 @@ uint64_t ImageUtils::PHash_Compute(const cv::Mat& inputImage)
     uint64_t hash = 0;
     for (uint64_t i = 64; i > 0;)
     {
-        hash |= (*++ptr & 1) << --i;
+        hash |= (*ptr++ & 1) << --i;
     }
 
 	return hash;
