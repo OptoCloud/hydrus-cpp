@@ -86,11 +86,7 @@ uint64_t ImageUtils::PHash_Compute(const cv::Mat& inputImage)
 }
 uint64_t ImageUtils::HammingDistance(uint64_t hash1, uint64_t hash2)
 {
-	uint64_t diff = hash1 ^ hash2;
-
-	std::bitset<64> diff_bits(diff);
-
-	return diff_bits.count();
+    return std::bitset<64>(hash1 ^ hash2).count();
 }
 
 #include "sha256.h"
