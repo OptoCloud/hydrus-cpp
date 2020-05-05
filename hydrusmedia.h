@@ -15,17 +15,16 @@ class HydrusMedia : public QObject
 	Q_OBJECT
 protected:
     HydrusMedia();
-    HydrusMedia(const QUuid& id, QObject* parent = nullptr);
+	HydrusMedia(int64_t id, QObject* parent = nullptr);
 
-    QUuid m_id;
+	int64_t m_id;
 	QUrl m_mediaLocation;
 
-    QList<QString> m_tags;
+	QList<int64_t> m_tags;
 
-    QCryptographicHash m_md5;
-    QCryptographicHash m_sha1;
-    QCryptographicHash m_sha256;
-    QCryptographicHash m_sha512;
+	uint8_t m_md5[16];
+	uint8_t m_sha1[20];
+	uint8_t m_sha256[32];
 public:
 	QUrl GetThumbnail() const;
 	QUrl GetLocation() const;

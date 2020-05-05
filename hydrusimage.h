@@ -7,9 +7,13 @@
 class HydrusImage : public HydrusMedia
 {
 	Q_OBJECT
-	QPixmap* m_imageData = nullptr; // Unloaded until played
+
 public:
-    HydrusImage(QPixmap& other, const QUuid& id, QObject* parent = nullptr);
+	HydrusImage(QPixmap& other, int64_t id, QObject* parent = nullptr);
+private:
+
+	uint64_t pHash;
+	QPixmap* m_imageData = nullptr; // Unloaded until played
 };
 
 #endif // HYDRUSIMAGESTILL_H

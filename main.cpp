@@ -16,9 +16,11 @@
 #include <QThread>
 #include <QThreadPool>
 #include <QMutex>
+#include <sha256.h>
+#include <QHash>
 
-#include <opencv2/core.hpp>
-#include <opencv2/imgcodecs.hpp>
+#include <opencv4/opencv2/core.hpp>
+#include <opencv4/opencv2/imgcodecs.hpp>
 
 #include "imageutils.h"
 
@@ -33,7 +35,8 @@ static const QStringList SupportedImageFormatsOpenCV = {
 	"*.sr","*.ras",				// Sun rasters
 	"*.tiff","*.tif"			// TIFF files
 };
-//static const QStringList SupportedImagesQt = QImageReader::supportedImageFormats();
+
+//static const QStringList SupportedImageFormatsQt = QImageReader::supportedImageFormats();
 //static const QStringList SupportedVideosQt = QMovie::supportedFormats();
 //static const QStringList SupportedAnimationsQt = QMovie::supportedFormats();
 static const QStringList SupportedAudiosQt = {"*.mp3", "*.flac","*.ogg","*.wma"};
@@ -65,11 +68,12 @@ public:
 		auto image = cv::imdecode(dataMat, cv::IMREAD_UNCHANGED);
 
 		// Do processing
+		qDebug() << "Processing" << path;
+		Hashing::Sha256 hash;
+		hash.Update(image.data, image.total() * image.elemSize());
+		sha256 =  hash.result();
 		if (!image.empty())
-		{
 			phash = ImageUtils::PHash_Compute(image);
-			//sha256 = ImageUtils::Sha256_Compute(image);
-		}
 	}
 };
 
@@ -91,17 +95,44 @@ bool compareRelations(const Relation &v1, const Relation &v2)
 	return v1.dist < v2.dist;
 }
 
+#include <algorithm>
+#include "hydrusthumbnailview.h"
 int main(int argc, char **argv)
 {
-	int nproc = QThread::idealThreadCount();
+
 	QThreadPool threadPool;
-	threadPool.setMaxThreadCount(nproc);
+	threadPool.setMaxThreadCount(QThread::idealThreadCount());
 
 	QApplication a(argc, argv);
 	QApplication::setApplicationName("Hydrus");
 	QApplication::setApplicationVersion("1.0");
 
 	MainWindow w;
+
+	auto page = new HydrusThumbnailView(&w);
+
+	// Generate test data
+	QList<int64_t> li;
+	for (int64_t i = 0; i < 10000; i++)
+		li.append(i);
+	std::random_shuffle(li.begin(), li.end());
+
+	// Set random data
+	page->SetItems(li.toSet());
+	page->setBackgroundBrush(Qt::red);
+
+	w.setCentralWidget(page);
+
+	/*
+#ifdef __linux__
+	ClientDB* db = ClientDB::Open("../test.db");
+#elif _WIN32
+	ClientDB* db = ClientDB::Open("..\\test.db");
+#else
+	ClientDB* db = ClientDB::Open(Some path here);
+#endif
+
+	delete db;
 
 	auto view = new QGraphicsView();
 	auto scene = new QGraphicsScene(&w);
@@ -113,9 +144,9 @@ int main(int argc, char **argv)
 	QDir(QDir::currentPath() + "/db").mkdir("thumbs");
 	QDir(QDir::currentPath() + "/db").mkdir("files");
 
-	auto list = dir.entryList(QDir::Filter::Files, QDir::SortFlag::Name); // HYDRUS_IMAGETYPES
+	auto files = dir.entryList(QDir::Filter::Files, QDir::SortFlag::Name); // HYDRUS_IMAGETYPES
 
-	if (list.length() == 0)
+	if (files.length() == 0)
 		return EXIT_SUCCESS;
 
 	int contentHeight = 125;
@@ -132,21 +163,17 @@ int main(int argc, char **argv)
 	qDebug() << "Queueing images...";
 
 	QList<Image> images;
-	for (uint32_t i = 0; i < list.length(); ++i)
-	{
-		images.append(Image(IMAGE_DIR + list[i]));
-	}
+	for (QString file : files)
+		images.append(Image(IMAGE_DIR + file));
 
 	QElapsedTimer timer;
 	timer.start();
-	for (uint32_t i = 0; i < images.length(); ++i)
-	{
-		images[i].run();
-	}
+	for (uint32_t i = 0; i < images.length();)
+		threadPool.start(&images[i++]);
 
 	qDebug() << "Processing...";
-	//threadPool.waitForDone();
-	qDebug().nospace() << "Used " << timer.elapsed() << "ms to calculate phash for " << list.length() << " images";
+	threadPool.waitForDone();
+	qDebug().nospace() << "Used " << timer.elapsed() << "ms to calculate phash for " << files.length() << " images";
 
 	QList<Relation> relations;
 	qDebug() << "Computing similarities...";
@@ -175,20 +202,17 @@ int main(int argc, char **argv)
 			break;
 	}
 
-
-
-	uint64_t lastHash = 0;
-	for (auto file : list)
+	for (auto image : images)
 	{
-		QFile f(file);
+		QFile f(image.path);
 		f.open(QFile::ReadOnly);
 		if (!f.isOpen())
 			continue;
 		auto data = f.readAll();
 		f.close();
 
-		QImage image = QImage::fromData(data);
-		if (!image.isNull())
+		QImage pic = QImage::fromData(data);
+		if (!pic.isNull())
 		{
 			qreal x = ((i%horItemCount)*(itemWidth+itemPadding))+itemPadding;
 			qreal y = ((i/horItemCount)*(itemHeight+itemPadding))+itemPadding;
@@ -196,12 +220,12 @@ int main(int argc, char **argv)
 			qDebug() << "X:" << x;
 			qDebug() << "Y:" << y;
 
-			qDebug() << IMAGE_DIR + file << '\n';
+			qDebug() << IMAGE_DIR + image.path << '\n';
 
-			QPixmap thumbNail = QPixmap::fromImage(image.scaled(itemWidth, itemHeight, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+			QPixmap thumbNail = QPixmap::fromImage(pic.scaled(itemWidth, itemHeight, Qt::KeepAspectRatio, Qt::SmoothTransformation));
 
-			//qDebug() << pixMap.cacheKey();
-			//pixMap.save("thumbs/" + QString::number(pixMap.cacheKey()), "PNG");
+			qDebug() << thumbNail.cacheKey();
+			thumbNail.save("thumbs/" + QString::number(image.phash), "PNG");
 
 			auto rect = new QGraphicsRectItem(x-1,y-1,itemWidth+1,itemHeight+1);
 			auto pic = new QGraphicsPixmapItem(thumbNail, rect);
@@ -210,26 +234,12 @@ int main(int argc, char **argv)
 			i++;
 		}
 		else
-			qDebug().nospace() << "Skipped " << IMAGE_DIR << file;
+			qDebug().nospace() << "Skipped " << IMAGE_DIR << image.path;
 	}
 
-	view->show();
 	w.setCentralWidget(view);
+	*/
 	w.show();
-/*
-#ifdef __linux__
-	ClientDB* db = ClientDB::Open("../test.db");
-#elif _WIN32
-	ClientDB* db = ClientDB::Open("..\\test.db");
-#else
-	ClientDB* db = ClientDB::Open(Some path here);
-#endif
-
-	if (db != nullptr)
-	{
-		QSqlQuery query = db.exec("create table person (id integer primary key, firstname varchar(20), lastname varchar(30), age integer)");
-	}
-*/
 
 	return a.exec();
 }

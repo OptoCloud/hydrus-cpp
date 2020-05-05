@@ -7,7 +7,7 @@ class HydrusVideo : public HydrusMedia
 {
 	Q_OBJECT
 public:
-    HydrusVideo(const QUuid& id, QObject* parent = nullptr);
+	HydrusVideo(int64_t id, QObject* parent = nullptr);
 };
 
 #endif // HYDRUSVIDEO_H

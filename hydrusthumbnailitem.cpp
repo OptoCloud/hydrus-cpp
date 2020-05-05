@@ -1,11 +1,18 @@
 #include "hydrusthumbnailitem.h"
 
-HydrusThumbnailItem::HydrusThumbnailItem(const QUuid& id) : QGraphicsPixmapItem()
+HydrusThumbnailItem::HydrusThumbnailItem(int64_t id, QGraphicsItem* parent) : QGraphicsRectItem(parent)
 {
 	m_id = id;
+	m_thumbnail = new QGraphicsPixmapItem(this);
+	m_thumbnail->setCacheMode(CacheMode::DeviceCoordinateCache);
 }
 
-QUuid HydrusThumbnailItem::mediaId() const
+HydrusThumbnailItem::~HydrusThumbnailItem()
+{
+
+}
+
+int64_t HydrusThumbnailItem::Id() const
 {
 	return m_id;
 }

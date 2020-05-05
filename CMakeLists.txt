@@ -14,7 +14,7 @@ endif ()
 message("\n")
 
 # ---OpenCV---
-find_package(OpenCV REQUIRED)
+find_package(OpenCV 4.2.0 REQUIRED)
 if (NOT OpenCV_FOUND)
     message(FATAL_ERROR "No OpenCV installation found, aborting")
 endif()
@@ -33,7 +33,7 @@ endif()
 message("Found Eigen ${Eigen3_VERSION}\n")
 
 # ---Qt---
-find_package(Qt5 COMPONENTS Core Gui OpenGL Test Sql Multimedia MultimediaWidgets REQUIRED)
+find_package(Qt5 COMPONENTS Core Gui Concurrent OpenGL Test Sql Multimedia MultimediaWidgets REQUIRED)
 if (NOT Qt5Core_FOUND)
     message(FATAL_ERROR "No Qt installation found, aborting")
 endif()
@@ -104,7 +104,7 @@ if (LINUX)
     list(APPEND LIBRARIES tbb)
     # Dynamic linking
     list(APPEND LIBRARIES dl)
-elif(WIN32)
+elseif(WIN32)
 
 endif()
 
@@ -114,7 +114,7 @@ set(${project}_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/hydrusimage.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/hydrusmedia.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/hydrusthumbnailitem.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/hydrusthumbnailview.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/hydrusthumbnailview.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/hydrusvideo.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/imageutils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/mainwindow.cpp
@@ -126,7 +126,7 @@ set(${project}_MOC
     ${CMAKE_CURRENT_SOURCE_DIR}/hydrusimage.h
     ${CMAKE_CURRENT_SOURCE_DIR}/hydrusmedia.h
     ${CMAKE_CURRENT_SOURCE_DIR}/hydrusthumbnailitem.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/hydrusthumbnailview.h
+	${CMAKE_CURRENT_SOURCE_DIR}/hydrusthumbnailview.h
     ${CMAKE_CURRENT_SOURCE_DIR}/hydrusvideo.h
     ${CMAKE_CURRENT_SOURCE_DIR}/imageutils.h
     ${CMAKE_CURRENT_SOURCE_DIR}/mainwindow.h
