@@ -4,50 +4,50 @@ set(project hydrus)
 project(${project})
 cmake_policy(SET CMP0071 NEW)
 
-add_compile_options(
-	-Wall
-	-Wextra
-	-pedantic
-	-Wunreachable-code
-	-Wcast-align
-	-Wcast-qual
-	-Wdisabled-optimization
-	-Wformat=2
-	-Winit-self
-	-Wmissing-declarations
-	-Wmissing-include-dirs
-	-Wredundant-decls
-	-Wold-style-cast
-	-Woverloaded-virtual
-	-Wshadow
-	-Wsign-conversion
-	-Wstrict-overflow=5
-	-Wswitch-default
-	-Wundef
-	#-Werror
-	-Wno-unused
-	-Wno-variadic-macros
-	-Wswitch-enum
-	-fstack-protector
-	-D_FORTIFY_SOURCE=2
-	-fPIC
-	)
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	add_compile_options(
-		-fmax-errors=5
-		-Wlogical-op
-		-Wnoexcept
-		-Wstrict-null-sentinel
-		-Wimplicit-fallthrough=3
-		-foptimize-strlen
-		-fdiagnostics-color
-		)
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-	add_compile_options(
-		# Clang doesn't like qCDebug():
-		-Wno-gnu-zero-variadic-macro-arguments
-		)
-endif()
+#add_compile_options(
+#	-Wall
+#	-Wextra
+#	-pedantic
+#	-Wunreachable-code
+#	-Wcast-align
+#	-Wcast-qual
+#	-Wdisabled-optimization
+#	-Wformat=2
+#	-Winit-self
+#	-Wmissing-declarations
+#	-Wmissing-include-dirs
+#	-Wredundant-decls
+#	-Wold-style-cast
+#	-Woverloaded-virtual
+#	-Wshadow
+#	-Wsign-conversion
+#	-Wstrict-overflow=5
+#	-Wswitch-default
+#	-Wundef
+#	#-Werror
+#	-Wno-unused
+#	-Wno-variadic-macros
+#	-Wswitch-enum
+#	-fstack-protector
+#	-D_FORTIFY_SOURCE=2
+#	-fPIC
+#	)
+#if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+#	add_compile_options(
+#		-fmax-errors=5
+#		-Wlogical-op
+#		-Wnoexcept
+#		-Wstrict-null-sentinel
+#		-Wimplicit-fallthrough=3
+#		-foptimize-strlen
+#		-fdiagnostics-color
+#		)
+#elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+#	add_compile_options(
+#		# Clang doesn't like qCDebug():
+#		-Wno-gnu-zero-variadic-macro-arguments
+#		)
+#endif()
 
 if(UNIX AND NOT APPLE)
     set(LINUX TRUE)
@@ -58,24 +58,24 @@ if (LINUX)
 endif ()
 message("\n")
 
-# ---OpenCV---
-find_package(OpenCV 4.2.0 REQUIRED)
-if (NOT OpenCV_FOUND)
-    message(FATAL_ERROR "No OpenCV installation found, aborting")
-endif()
-list(APPEND OpenCV_LIBS)
-message("Found OpenCV ${OpenCV_VERSION}")
-message("Includes:\t\t${OpenCV_INCLUDE_DIRS}")
-message("Libraries:\t\t${OpenCV_LIBS}\n")
-list(APPEND LIBRARIES ${OpenCV_LIBS})
-list(APPEND INCLUDE_DIRS ${OpenCV_DIRS})
+## ---OpenCV---
+#find_package(OpenCV 4.2.0 REQUIRED)
+#if (NOT OpenCV_FOUND)
+#    message(FATAL_ERROR "No OpenCV installation found, aborting")
+#endif()
+#list(APPEND OpenCV_LIBS)
+#message("Found OpenCV ${OpenCV_VERSION}")
+#message("Includes:\t\t${OpenCV_INCLUDE_DIRS}")
+#message("Libraries:\t\t${OpenCV_LIBS}\n")
+#list(APPEND LIBRARIES ${OpenCV_LIBS})
+#list(APPEND INCLUDE_DIRS ${OpenCV_DIRS})
 
-# ---Eigen---
-find_package(Eigen3 REQUIRED)
-if (NOT Eigen3_FOUND)
-    message(FATAL_ERROR "No Eigen3 installation found, aborting")
-endif()
-message("Found Eigen ${Eigen3_VERSION}\n")
+## ---Eigen---
+#find_package(Eigen3 REQUIRED)
+#if (NOT Eigen3_FOUND)
+#    message(FATAL_ERROR "No Eigen3 installation found, aborting")
+#endif()
+#message("Found Eigen ${Eigen3_VERSION}\n")
 
 # ---Qt---
 find_package(Qt5 COMPONENTS Core Gui Concurrent OpenGL Test Sql Multimedia MultimediaWidgets REQUIRED)
@@ -138,20 +138,20 @@ execute_process(
 )
 message("QT system dir: ${QT_SYSTEM_DIR}\n")
 
-if (LINUX)
-    # ZLib
-    list(APPEND LIBRARIES z)
-    # OpenEXR
-    list(APPEND LIBRARIES IlmImf)
-    # Image parsing and processing
-    list(APPEND LIBRARIES png16 jpeg tiff)
-    # Intel
-    list(APPEND LIBRARIES tbb)
-    # Dynamic linking
-    list(APPEND LIBRARIES dl)
-elseif(WIN32)
-
-endif()
+#if (LINUX)
+#    # ZLib
+#    list(APPEND LIBRARIES z)
+#    # OpenEXR
+#    list(APPEND LIBRARIES IlmImf)
+#    # Image parsing and processing
+#    list(APPEND LIBRARIES png16 jpeg tiff)
+#    # Intel
+#    list(APPEND LIBRARIES tbb)
+#    # Dynamic linking
+#    list(APPEND LIBRARIES dl)
+#elseif(WIN32)
+#
+#endif()
 
 set(${project}_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/clientdb.cpp
@@ -161,7 +161,7 @@ set(${project}_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/hydrusthumbnailitem.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/hydrusthumbnailview.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/hydrusvideo.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/imageutils.cpp
+#    ${CMAKE_CURRENT_SOURCE_DIR}/imageutils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/mainwindow.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/sha256.cpp
 )
@@ -173,7 +173,7 @@ set(${project}_MOC
     ${CMAKE_CURRENT_SOURCE_DIR}/hydrusthumbnailitem.h
 	${CMAKE_CURRENT_SOURCE_DIR}/hydrusthumbnailview.h
     ${CMAKE_CURRENT_SOURCE_DIR}/hydrusvideo.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/imageutils.h
+#    ${CMAKE_CURRENT_SOURCE_DIR}/imageutils.h
     ${CMAKE_CURRENT_SOURCE_DIR}/mainwindow.h
     ${CMAKE_CURRENT_SOURCE_DIR}/sha256.h
 )
