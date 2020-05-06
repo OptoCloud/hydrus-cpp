@@ -14,20 +14,20 @@ using namespace Hashing;
 #define SHA256_F3(x) (ROTR(x,  7) ^ ROTR(x, 18) ^ SHFR(x,  3))
 #define SHA256_F4(x) (ROTR(x, 17) ^ ROTR(x, 19) ^ SHFR(x, 10))
 
-#define UNPACK32(x, str)                      \
-{                                             \
-	*((str) + 3) = (uint8_t) ((x)      );       \
-	*((str) + 2) = (uint8_t) ((x) >>  8);       \
-	*((str) + 1) = (uint8_t) ((x) >> 16);       \
-	*((str) + 0) = (uint8_t) ((x) >> 24);       \
+#define UNPACK32(x, str)                            \
+{                                                   \
+	*((str) + 3) = static_cast<quint8>((x)      ); \
+	*((str) + 2) = static_cast<quint8>((x) >>  8); \
+	*((str) + 1) = static_cast<quint8>((x) >> 16); \
+	*((str) + 0) = static_cast<quint8>((x) >> 24); \
 }
 
 #define PACK32(str, x)                        \
 {                                             \
-	*(x) =   ((uint32_t) *((str) + 3)      )    \
-		   | ((uint32_t) *((str) + 2) <<  8)    \
-		   | ((uint32_t) *((str) + 1) << 16)    \
-		   | ((uint32_t) *((str) + 0) << 24);   \
+	*(x) =   (static_cast<quint32>(*((str) + 3)      ))  \
+		   | (static_cast<quint32>(*((str) + 2) <<  8))  \
+		   | (static_cast<quint32>(*((str) + 1) << 16))  \
+		   | (static_cast<quint32>(*((str) + 0) << 24)); \
 }
 
 #define SHA256_SCR(i)                         \
@@ -36,11 +36,11 @@ using namespace Hashing;
 		  + SHA256_F3(w[i - 15]) + w[i - 16]; \
 }
 
-uint32_t sha256_h0[8] =
+quint32 sha256_h0[8] =
 			{0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
 			 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19};
 
-uint32_t sha256_k[64] =
+quint32 sha256_k[64] =
 			{0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
 			 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
 			 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
@@ -60,26 +60,26 @@ uint32_t sha256_k[64] =
 
 Sha256::Sha256()
 {
-	for (int32_t i = 0; i < 8; ++i) {
-		this->h[i] = sha256_h0[i];
+	for (qint32 i = 0; i < 8; ++i) {
+		this->m_h[i] = sha256_h0[i];
 	}
 
-	this->len = 0;
-	this->tot_len = 0;
+	this->m_len = 0;
+	this->m_totLen = 0;
 }
-void Sha256::Update(const uint8_t *message, uint32_t len)
+void Sha256::update(const quint8 *message, quint32 len)
 {
-	uint32_t block_nb;
-	uint32_t new_len, rem_len, tmp_len;
-	const uint8_t *shifted_message;
+	quint32 block_nb;
+	quint32 new_len, rem_len, tmp_len;
+	const quint8 *shifted_message;
 
-	tmp_len = SHA256_BLOCK_SIZE - this->len;
+	tmp_len = SHA256_BLOCK_SIZE - this->m_len;
 	rem_len = len < tmp_len ? len : tmp_len;
 
-	memcpy(&this->block[this->len], message, rem_len);
+	memcpy(&this->m_block[this->m_len], message, rem_len);
 
-	if (this->len + len < SHA256_BLOCK_SIZE) {
-		this->len += len;
+	if (this->m_len + len < SHA256_BLOCK_SIZE) {
+		this->m_len += len;
 		return;
 	}
 
@@ -88,53 +88,53 @@ void Sha256::Update(const uint8_t *message, uint32_t len)
 
 	shifted_message = message + rem_len;
 
-	this->Transform(this->block, 1);
-	this->Transform(shifted_message, block_nb);
+	this->transform(this->m_block, 1);
+	this->transform(shifted_message, block_nb);
 
 	rem_len = new_len % SHA256_BLOCK_SIZE;
 
-	memcpy(this->block, &shifted_message[block_nb << 6],
+	memcpy(this->m_block, &shifted_message[block_nb << 6],
 		   rem_len);
 
-	this->len = rem_len;
-	this->tot_len += (block_nb + 1) << 6;
+	this->m_len = rem_len;
+	this->m_totLen += (block_nb + 1) << 6;
 }
 QByteArray Sha256::result()
 {
-	uint32_t block_nb;
-	uint32_t pm_len;
-	uint32_t len_b;
+	quint32 block_nb;
+	quint32 pm_len;
+	quint32 len_b;
 
 	block_nb = (1 + ((SHA256_BLOCK_SIZE - 9)
-					 < (this->len % SHA256_BLOCK_SIZE)));
+					 < (this->m_len % SHA256_BLOCK_SIZE)));
 
-	len_b = (this->tot_len + this->len) << 3;
+	len_b = (this->m_totLen + this->m_len) << 3;
 	pm_len = block_nb << 6;
 
-	memset(this->block + this->len, 0, pm_len - this->len);
-	this->block[this->len] = 0x80;
-	UNPACK32(len_b, this->block + pm_len - 4);
+	memset(this->m_block + this->m_len, 0, pm_len - this->m_len);
+	this->m_block[this->m_len] = 0x80;
+	UNPACK32(len_b, this->m_block + pm_len - 4);
 
-	this->Transform(this->block, block_nb);
+	this->transform(this->m_block, block_nb);
 
-	uint8_t* digest = new uint8_t[32];
+	quint8* digest = new quint8[32];
 
-	for (int32_t i = 0 ; i < 8; ++i) {
-		UNPACK32(this->h[i], &digest[i << 2]);
+	for (qint32 i = 0 ; i < 8; ++i) {
+		UNPACK32(this->m_h[i], &digest[i << 2]);
 	}
 
-	return QByteArray((char*)digest, 32);
+	return QByteArray(reinterpret_cast<char*>(digest), 32);
 }
-void Sha256::Transform(const uint8_t *message, uint32_t block_nb)
+void Sha256::transform(const quint8 *message, quint32 block_nb)
 {
-	uint32_t w[64];
-	uint32_t wv[8];
-	uint32_t t1, t2;
-	const uint8_t *sub_block;
+	quint32 w[64];
+	quint32 wv[8];
+	quint32 t1, t2;
+	const quint8 *sub_block;
 
-	int32_t j;
+	qint32 j;
 
-	for (int32_t i = 0; i < (int32_t) block_nb; ++i) {
+	for (qint32 i = 0; i < static_cast<qint32>(block_nb); ++i) {
 		sub_block = message + (i << 6);
 
 		for (j = 0; j < 16; ++j) {
@@ -146,7 +146,7 @@ void Sha256::Transform(const uint8_t *message, uint32_t block_nb)
 		}
 
 		for (j = 0; j < 8; ++j) {
-			wv[j] = this->h[j];
+			wv[j] = this->m_h[j];
 		}
 
 		for (j = 0; j < 64; ++j) {
@@ -164,7 +164,7 @@ void Sha256::Transform(const uint8_t *message, uint32_t block_nb)
 		}
 
 		for (j = 0; j < 8; ++j) {
-			this->h[j] += wv[j];
+			this->m_h[j] += wv[j];
 		}
 	}
 }

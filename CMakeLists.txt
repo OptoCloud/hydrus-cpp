@@ -4,6 +4,51 @@ set(project hydrus)
 project(${project})
 cmake_policy(SET CMP0071 NEW)
 
+add_compile_options(
+	-Wall
+	-Wextra
+	-pedantic
+	-Wunreachable-code
+	-Wcast-align
+	-Wcast-qual
+	-Wdisabled-optimization
+	-Wformat=2
+	-Winit-self
+	-Wmissing-declarations
+	-Wmissing-include-dirs
+	-Wredundant-decls
+	-Wold-style-cast
+	-Woverloaded-virtual
+	-Wshadow
+	-Wsign-conversion
+	-Wstrict-overflow=5
+	-Wswitch-default
+	-Wundef
+	#-Werror
+	-Wno-unused
+	-Wno-variadic-macros
+	-Wswitch-enum
+	-fstack-protector
+	-D_FORTIFY_SOURCE=2
+	-fPIC
+	)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	add_compile_options(
+		-fmax-errors=5
+		-Wlogical-op
+		-Wnoexcept
+		-Wstrict-null-sentinel
+		-Wimplicit-fallthrough=3
+		-foptimize-strlen
+		-fdiagnostics-color
+		)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	add_compile_options(
+		# Clang doesn't like qCDebug():
+		-Wno-gnu-zero-variadic-macro-arguments
+		)
+endif()
+
 if(UNIX AND NOT APPLE)
     set(LINUX TRUE)
 endif()

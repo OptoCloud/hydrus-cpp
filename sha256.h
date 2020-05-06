@@ -11,18 +11,18 @@ namespace Hashing {
 
 class Sha256 final
 {
-	uint32_t tot_len;
-	uint32_t len;
-	uint8_t  block[2 * SHA256_BLOCK_SIZE];
-	uint32_t h[8];
-
-	void Transform(const uint8_t *message, uint32_t block_nb);
+	void transform(const quint8 *message, quint32 block_nb);
 public:
 	Sha256();
-	void Update(const uint8_t *message, uint32_t len);
+	void update(const quint8 *message, quint32 m_len);
 	QByteArray result();
 	QString hex();
 	QString b64();
+private:
+	quint8  m_block[2 * SHA256_BLOCK_SIZE];
+	quint32 m_h[8];
+	quint32 m_len;
+	quint32 m_totLen;
 };
 
 }

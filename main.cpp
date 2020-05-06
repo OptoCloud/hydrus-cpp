@@ -50,7 +50,7 @@ public:
 		this->path = path;
 	}
 	QString path;
-	uint64_t phash;
+	quint64 phash;
 	QByteArray sha256;
 
 	void run()
@@ -64,22 +64,22 @@ public:
 		f.close();
 
 		// Parse as cv::Mat
-		auto dataMat = cv::Mat(data.size(), 1, CV_8UC1, (char*)data.data());
+		auto dataMat = cv::Mat(data.size(), 1, CV_8UC1, reinterpret_cast<char*>(data.data()));
 		auto image = cv::imdecode(dataMat, cv::IMREAD_UNCHANGED);
 
 		// Do processing
 		qDebug() << "Processing" << path;
 		Hashing::Sha256 hash;
-		hash.Update(image.data, image.total() * image.elemSize());
+		hash.update(image.data, image.total() * image.elemSize());
 		sha256 =  hash.result();
 		if (!image.empty())
-			phash = ImageUtils::PHash_Compute(image);
+			phash = ImageUtils::ComputePHash(image);
 	}
 };
 
 struct Relation
 {
-	Relation(const QString& name1, const QString& name2, uint16_t dist)
+	Relation(const QString& name1, const QString& name2, quint16 dist)
 	{
 		this->name1 = name1;
 		this->name2 = name2;
@@ -87,7 +87,7 @@ struct Relation
 	}
 	QString name1;
 	QString name2;
-	uint16_t dist;
+	quint16 dist;
 };
 
 bool compareRelations(const Relation &v1, const Relation &v2)
@@ -95,7 +95,6 @@ bool compareRelations(const Relation &v1, const Relation &v2)
 	return v1.dist < v2.dist;
 }
 
-#include <algorithm>
 #include "hydrusthumbnailview.h"
 int main(int argc, char **argv)
 {
@@ -104,21 +103,23 @@ int main(int argc, char **argv)
 	threadPool.setMaxThreadCount(QThread::idealThreadCount());
 
 	QApplication a(argc, argv);
+	QApplication::setDesktopFileName("Hydrus");
 	QApplication::setApplicationName("Hydrus");
 	QApplication::setApplicationVersion("1.0");
 
 	MainWindow w;
 
-	auto page = new HydrusThumbnailView(&w);
+	//QObject::connect(w, QMainWindow::)
+
+	auto page = new HydrusThumbnailView(0, 0, 300, 300, &w);
 
 	// Generate test data
-	QList<int64_t> li;
-	for (int64_t i = 0; i < 10000; i++)
-		li.append(i);
-	std::random_shuffle(li.begin(), li.end());
+	QSet<qint64> fakeIdList;
+	for (qint64 i = 0; i < 10000; i++)
+		fakeIdList.insert(i);
 
 	// Set random data
-	page->SetItems(li.toSet());
+	page->setItems(fakeIdList);
 	page->setBackgroundBrush(Qt::red);
 
 	w.setCentralWidget(page);
@@ -168,7 +169,7 @@ int main(int argc, char **argv)
 
 	QElapsedTimer timer;
 	timer.start();
-	for (uint32_t i = 0; i < images.length();)
+	for (quint32 i = 0; i < images.length();)
 		threadPool.start(&images[i++]);
 
 	qDebug() << "Processing...";
@@ -177,11 +178,11 @@ int main(int argc, char **argv)
 
 	QList<Relation> relations;
 	qDebug() << "Computing similarities...";
-	for (uint16_t x = 0; x < images.length(); ++x)
+	for (quint16 x = 0; x < images.length(); ++x)
 	{
-		for (uint16_t y = images.length()-1; x < y; --y)
+		for (quint16 y = images.length()-1; x < y; --y)
 		{
-			uint16_t distance = ImageUtils::HammingDistance(images[x].phash, images[y].phash);
+			quint16 distance = ImageUtils::HammingDistance(images[x].phash, images[y].phash);
 			relations.push_back(Relation(images[x].path, images[y].path, distance));
 
 			printf("Comparing %i to %i, resulted in a distance of %i\n", x, y, distance);

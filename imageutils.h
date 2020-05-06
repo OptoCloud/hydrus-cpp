@@ -7,9 +7,9 @@
 
 namespace ImageUtils
 {
-uint64_t PHash_Compute(const cv::Mat& image);
-QByteArray Sha256_Compute(const cv::Mat& image);
-uint64_t HammingDistance(uint64_t hash1, uint64_t hash2);
+quint64 ComputePHash(const cv::Mat& image);
+QByteArray ComputeSha256(const cv::Mat& image);
+quint64 HammingDistance(quint64 hash1, quint64 hash2);
 }
 
 #endif // IMAGEUTILS_H

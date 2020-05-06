@@ -1,6 +1,6 @@
 #include "hydrusvideo.h"
 
-HydrusVideo::HydrusVideo(int64_t id, QObject *parent) : HydrusMedia(id, parent)
+HydrusVideo::HydrusVideo(qint64 id, QObject *parent) : HydrusMedia(id, parent)
 {
 
 }

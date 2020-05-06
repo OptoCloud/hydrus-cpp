@@ -9,11 +9,11 @@
 class HydrusThumbnailItem : public QGraphicsRectItem
 {
 public:
-	HydrusThumbnailItem(int64_t id, QGraphicsItem* parent = nullptr);
+	HydrusThumbnailItem(qint64 id, QGraphicsItem* parent = nullptr);
 	~HydrusThumbnailItem();
 
-	int64_t Id() const;
-	QList<int64_t> TagIds() const;
+	qint64 id() const;
+	QList<qint64> tagIds() const;
 protected:
 	// Context menu
 	void contextMenuEvent(QGraphicsSceneContextMenuEvent *event) override;
@@ -36,8 +36,9 @@ protected:
 	void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
 	void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 	void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;private:
-	int64_t m_id;
-	QSet<int64_t> m_tags;
+private:
+	qint64 m_id;
+	QSet<qint64> m_tags;
 	QGraphicsPixmapItem* m_thumbnail;
 };
 

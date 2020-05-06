@@ -8,6 +8,8 @@
 
 const QString DRIVER("QSQLITE");
 
+ClientDB::ClientDB(){}
+
 ClientDB* ClientDB::Open(const QString& path)
 {
 	if(!QSqlDatabase::isDriverAvailable(DRIVER))
@@ -23,12 +25,9 @@ ClientDB* ClientDB::Open(const QString& path)
 		return nullptr;
 	}
 
-	return new ClientDB(db);
-}
-
-ClientDB::ClientDB(const QSqlDatabase& db)
-{
-	m_db = db;
+	auto cdb = new ClientDB();
+	cdb->m_db = db;
+	return cdb;
 }
 
 ClientDB::~ClientDB()

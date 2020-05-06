@@ -1,6 +1,6 @@
 #include "hydrusthumbnailitem.h"
 
-HydrusThumbnailItem::HydrusThumbnailItem(int64_t id, QGraphicsItem* parent) : QGraphicsRectItem(parent)
+HydrusThumbnailItem::HydrusThumbnailItem(qint64 id, QGraphicsItem* parent) : QGraphicsRectItem(parent)
 {
 	m_id = id;
 	m_thumbnail = new QGraphicsPixmapItem(this);
@@ -12,7 +12,7 @@ HydrusThumbnailItem::~HydrusThumbnailItem()
 
 }
 
-int64_t HydrusThumbnailItem::Id() const
+qint64 HydrusThumbnailItem::id() const
 {
 	return m_id;
 }

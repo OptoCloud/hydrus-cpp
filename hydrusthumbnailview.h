@@ -17,34 +17,39 @@ class HydrusThumbnailView : public QGraphicsView
 	Q_OBJECT
 
 public:
-	HydrusThumbnailView(QWidget* parent = nullptr);
-	HydrusThumbnailView(QSize itemSize, int itemSpacing, QWidget* parent = nullptr);
-	HydrusThumbnailView(int itemWidth, int itemHeight, int itemSpacing, QWidget* parent = nullptr);
+	HydrusThumbnailView(const QRectF& sceneRect, QWidget* parent = nullptr);
+	HydrusThumbnailView(const QRectF& sceneRect, const QSizeF& itemSize, qreal itemSpacing, QWidget* parent = nullptr);
+	HydrusThumbnailView(qreal scenePosX, qreal scenePosY, qreal sceneWidth, qreal sceneHeight, QWidget* parent = nullptr);
+	HydrusThumbnailView(qreal scenePosX, qreal scenePosY, qreal sceneWidth, qreal sceneHeight, qreal itemWidth, qreal itemHeight, qreal itemSpacing, QWidget* parent = nullptr);
 	~HydrusThumbnailView();
 
-	void SetItems(const QSet<int64_t>& ids);
-	int AddItems(const QSet<int64_t>& ids);
-	int RemoveItems(const QSet<int64_t>& ids);
-	void ClearItems();
-	QSet<int64_t> GetItems() const;
+	void setItemLayout(const QSizeF& size, qreal margin);
+	void setItemLayout(qreal widht, qreal height, qreal margin);
+	QSizeF getItemSize();
+	qreal getItemMargin();
+
+	void setItems(const QSet<qint64>& ids);
+	int addItems(const QSet<qint64>& ids);
+	int removeItems(const QSet<qint64>& ids);
+	void clearItems();
+	QSet<qint64> getItems() const;
 protected:
 	void resizeEvent(QResizeEvent *event) override;
 signals:
-	void itemsChanged(const QSet<int64_t>& list);
-	void itemFocused(int64_t id);
-	void itemClicked(int64_t id);
-	void itemLeftClicked(int64_t id);
-	void itemDoubleClicked(int64_t id);
+	void itemsChanged(const QSet<qint64>& list);
+	void itemFocused(qint64 id);
+	void itemClicked(qint64 id);
+	void itemLeftClicked(qint64 id);
+	void itemDoubleClicked(qint64 id);
 private slots:
 	void PositionAndScaleItems(const QSize& viewSize);
 	void PositionItems(const QSize& viewSize);
 private:
-	int m_itemWidth;
-	int m_itemHeight;
-	int m_itemSpacing;
-	int m_prevColCount = 0;
+	QSizeF m_itemSize;
+	qreal m_itemMargin;
+	quint8 m_prevColCount = 0;
 	QGraphicsScene* m_scene;
-	QMap<int64_t, HydrusThumbnailItem*> m_thumbnails;
+	QMap<qint64, HydrusThumbnailItem*> m_thumbnails;
 };
 
 #endif // HYDRUSMEDIAVIEW_H

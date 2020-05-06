@@ -7,9 +7,10 @@
 class HydrusAnimation : public HydrusMedia
 {
 	Q_OBJECT
-	QMovie* m_animData = nullptr; // Unloaded until mousehover/played
 public:
     HydrusAnimation(const HydrusAnimation& other);
+private:
+	QMovie* m_animData = nullptr; // Unloaded until mousehover/played
 };
 
 #endif // HYDRUSIMAGEANIMATED_H

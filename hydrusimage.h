@@ -9,10 +9,10 @@ class HydrusImage : public HydrusMedia
 	Q_OBJECT
 
 public:
-	HydrusImage(QPixmap& other, int64_t id, QObject* parent = nullptr);
-private:
+	HydrusImage(QPixmap& other, qint64 id, QObject* parent = nullptr);
 
-	uint64_t pHash;
+private:
+	quint64 m_pHash;
 	QPixmap* m_imageData = nullptr; // Unloaded until played
 };
 

@@ -7,7 +7,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 
-uint64_t ImageUtils::PHash_Compute(const cv::Mat& inputImage)
+quint64 ImageUtils::ComputePHash(const cv::Mat& inputImage)
 {
 	cv::Mat image;
 	inputImage.copyTo(image);
@@ -74,26 +74,39 @@ uint64_t ImageUtils::PHash_Compute(const cv::Mat& inputImage)
 	// Convert roi to bool map
 	cv::Mat dct_bool = image > meanMat;
 
-    // Convert to uint64
-    uint8_t* ptr = dct_bool.ptr<uint8_t>(0);
-    uint64_t hash = 0;
-    for (uint64_t i = 64; i > 0;)
+	// Array of bytes that are either 0x00 or 0xFF
+	quint8* ptr = dct_bool.ptr<quint8>(0);
+
+	quint64 hash = 0;
+	// Iterates trough the 64 bytes and masks every byte to a bit in the 64 bit integer
+	for (quint64 i = 64; i > 0; i--)
     {
-        hash |= (*ptr++ & 1) << --i;
+		// Mask byte to a bit
+		quint64 masked = *ptr & 1;
+
+		// Shift bit into its position
+		hash |= masked << i;
+
+		// Increment by one byte
+		ptr++;
     }
 
 	return hash;
 }
-uint64_t ImageUtils::HammingDistance(uint64_t hash1, uint64_t hash2)
+quint64 ImageUtils::HammingDistance(quint64 hash1, quint64 hash2)
 {
-    return std::bitset<64>(hash1 ^ hash2).count();
+	// Get which bits are different
+	quint64 diff = hash1 ^ hash2;
+
+	// Count the b
+	return std::bitset<64>(diff).count();
 }
 
 #include "sha256.h"
 #include <QByteArray>
-QByteArray ImageUtils::Sha256_Compute(const cv::Mat& image)
+QByteArray ImageUtils::ComputeSha256(const cv::Mat& image)
 {
 	Hashing::Sha256 hash;
-	hash.Update(image.data, image.total() * image.elemSize());
+	hash.update(image.data, image.total() * image.elemSize());
 	return hash.result();
 }

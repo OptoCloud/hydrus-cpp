@@ -1,15 +1,19 @@
 #ifndef CLIENTDB_H
 #define CLIENTDB_H
 
+#include <QObject>
 #include <QtSql/QSqlDatabase>
-class ClientDB
+
+class ClientDB : public QObject
 {
+	Q_OBJECT
+	Q_DISABLE_COPY(ClientDB)
+
+	ClientDB();
 public:
 	static ClientDB* Open(const QString& path);
 	~ClientDB();
 private:
-	ClientDB() = delete;
-	ClientDB(const QSqlDatabase& db);
 
 	QSqlDatabase m_db;
 };
