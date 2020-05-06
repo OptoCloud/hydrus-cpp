@@ -1,5 +1,6 @@
 #include "hydrusthumbnailview.h"
 
+#include <QDebug>
 #include <QResizeEvent>
 
 #define DEFAULT_WIDTH 150
@@ -91,6 +92,7 @@ void HydrusThumbnailView::setItems(const QSet<qint64>& ids)
 	for (qint64 i : idsToLoad)
 	{
 		auto item = new HydrusThumbnailItem(i);
+		item->setRect(0,0,m_itemSize.width(),m_itemSize.height());
 		item->setBrush(Qt::black);
 		m_scene->addItem(item);
 		m_thumbnails.insert(i, item);
@@ -112,6 +114,8 @@ int HydrusThumbnailView::addItems(const QSet<qint64> &ids)
 	for (qint64 i : idsToLoad)
 	{
 		auto item = new HydrusThumbnailItem(i);
+		item->setRect(0,0,m_itemSize.width(),m_itemSize.height());
+		item->setBrush(Qt::black);
 		m_scene->addItem(item);
 		m_thumbnails.insert(i, item);
 	}
@@ -173,6 +177,7 @@ void HydrusThumbnailView::resizeEvent(QResizeEvent* event)
 	if (event->type() == QResizeEvent::Type::Resize)
 	{
 		PositionItems(event->size());
+		qDebug() << "Window resized from" << event->oldSize() << "to" << event->size() << "Current:" << this->rect();
 	}
 
 	QGraphicsView::resizeEvent(event);
@@ -181,12 +186,10 @@ void HydrusThumbnailView::resizeEvent(QResizeEvent* event)
 void HydrusThumbnailView::PositionAndScaleItems(const QSize& viewSize)
 {
 	// Column currently at, and number of columns to create
-	quint8 col = 0;
-	quint8 nCols = 1;
-
-	// Item position (top-left corner)
-	qreal posX = m_itemMargin;
-	qreal posY = m_itemMargin;
+	int col = 0;
+	int row = 0;
+	int nCols = 1;
+	int nRows = 1;
 
 	// Item position offset values
 	qreal incValX = m_itemSize.width() + m_itemMargin;
@@ -197,29 +200,34 @@ void HydrusThumbnailView::PositionAndScaleItems(const QSize& viewSize)
 
 	// If width is more than minimum then how many columns can we fit within it?
 	if (viewSize.width() > minWidth)
-	{
-		// Add 0.5 to round off properly
-		m_prevColCount = nCols = ((viewSize.width() / incValX) + 0.5);
-	}
+		m_prevColCount = nCols = viewSize.width() / incValX;
+
+	// Get all items
+	auto items = m_thumbnails.values();
+
+	// Resize height to fit all items
+	nRows = (items.length() / nCols) + 1;
+	resize(width(), (incValY * nRows) + m_itemMargin);
 
 	// Redraw all items
-	for (auto item : m_thumbnails.values())
+	for (auto item : items)
 	{
 		// Position and scale
-		item->setRect(QRectF(QPointF(posX, posY), m_itemSize));
+		item->setRect(
+					QRectF(
+						QPointF(
+							m_itemMargin + (incValX * col++),
+							m_itemMargin + (incValY * row)
+							),
+						m_itemSize
+						)
+					);
 
 		// If the next column exceeds the amount columns theres space for, then go back to column position 0
-		if (++col < nCols)
-		{
-			// increment column
-			posX += incValX;
-		}
-		else
+		if (col >= nCols)
 		{
 			col = 0;
-			// Set column to first, and increment row
-			posX = m_itemMargin;
-			posY += incValY;
+			row++;
 		}
 	}
 }
@@ -227,12 +235,10 @@ void HydrusThumbnailView::PositionAndScaleItems(const QSize& viewSize)
 void HydrusThumbnailView::PositionItems(const QSize& viewSize)
 {
 	// Column currently at, and number of columns to create
-	quint8 col = 0;
-	quint8 nCols = 1;
-
-	// Item position (top-left corner)
-	qreal posX = m_itemMargin;
-	qreal posY = m_itemMargin;
+	int col = 0;
+	int row = 0;
+	int nCols = 1;
+	int nRows = 1;
 
 	// Item position offset values
 	qreal incValX = m_itemSize.width() + m_itemMargin;
@@ -245,32 +251,36 @@ void HydrusThumbnailView::PositionItems(const QSize& viewSize)
 	if (viewSize.width() > minWidth)
 	{
 		// Add 0.5 to round off properly
-		nCols = ((viewSize.width() / incValX) + 0.5);
+		nCols = viewSize.width() / incValX;
 	}
 
 	// If the layout changed
 	if (nCols != m_prevColCount)
 	{
+		// Get all items
+		auto items = m_thumbnails.values();
+
+		// Store the column number for the next resize
 		m_prevColCount = nCols;
 
+		// Resize height to fit all items
+		nRows = (items.length() / nCols) + 1;
+		resize(width(), (incValY * nRows) + m_itemMargin);
+
 		// Redraw all items
-		for (auto item : m_thumbnails.values())
+		for (auto item : items)
 		{
 			// Position
-			item->setPos(posX, posY);
+			item->setPos(
+						m_itemMargin + (incValX * col++),
+						m_itemMargin + (incValY * row)
+						);
 
 			// If the next column exceeds the amount columns theres space for, then go back to column position 0
-			if (++col < nCols)
-			{
-				// increment column
-				posX += incValX;
-			}
-			else
+			if (col >= nCols)
 			{
 				col = 0;
-				// Set column to first, and increment row
-				posX = m_itemMargin;
-				posY += incValY;
+				row++;
 			}
 		}
 	}
