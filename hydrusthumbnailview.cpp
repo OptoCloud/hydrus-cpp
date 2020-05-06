@@ -199,7 +199,7 @@ void HydrusThumbnailView::PositionAndScaleItems(const QSize& viewSize)
 	if (viewSize.width() > minWidth)
 	{
 		// Add 0.5 to round off properly
-		nCols = ((viewSize.width() / incValX) + 0.5);
+		m_prevColCount = nCols = ((viewSize.width() / incValX) + 0.5);
 	}
 
 	// Redraw all items
@@ -209,17 +209,17 @@ void HydrusThumbnailView::PositionAndScaleItems(const QSize& viewSize)
 		item->setRect(QRectF(QPointF(posX, posY), m_itemSize));
 
 		// If the next column exceeds the amount columns theres space for, then go back to column position 0
-		if (++col > nCols)
+		if (++col < nCols)
+		{
+			// increment column
+			posX += incValX;
+		}
+		else
 		{
 			col = 0;
 			// Set column to first, and increment row
 			posX = m_itemMargin;
 			posY += incValY;
-		}
-		else
-		{
-			// increment column
-			posX += incValX;
 		}
 	}
 }
@@ -251,6 +251,8 @@ void HydrusThumbnailView::PositionItems(const QSize& viewSize)
 	// If the layout changed
 	if (nCols != m_prevColCount)
 	{
+		m_prevColCount = nCols;
+
 		// Redraw all items
 		for (auto item : m_thumbnails.values())
 		{
@@ -258,17 +260,17 @@ void HydrusThumbnailView::PositionItems(const QSize& viewSize)
 			item->setPos(posX, posY);
 
 			// If the next column exceeds the amount columns theres space for, then go back to column position 0
-			if (++col > nCols)
+			if (++col < nCols)
+			{
+				// increment column
+				posX += incValX;
+			}
+			else
 			{
 				col = 0;
 				// Set column to first, and increment row
 				posX = m_itemMargin;
 				posY += incValY;
-			}
-			else
-			{
-				// increment column
-				posX += incValX;
 			}
 		}
 	}
