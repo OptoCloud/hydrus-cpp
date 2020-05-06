@@ -67,19 +67,18 @@ qreal HydrusThumbnailView::getItemMargin()
 
 void HydrusThumbnailView::setItems(const QSet<qint64>& ids)
 {
-	// Get already loaded id's, and see which id's we dont have loaded
 	auto loadedIds = m_thumbnails.keys().toSet();
 	auto idsToLoad = ids - loadedIds;
 
-	// If input is empty / we dont have any of the input ids
-	if (ids.isEmpty() || idsToLoad.count() == ids.count())
+	// If none of the items we are about to load are already here, then clear the data
+	if (idsToLoad.count() == ids.count())
 	{
-		// Clear the scene
 		m_scene->clear();
+		m_thumbnails.clear();
 	}
 	else
 	{
-		// Remove all id's that arent in the new ids array
+		// else remove all id's that arent in the new ids array
 		for (qint64 i : (loadedIds - ids))
 		{
 			auto item = m_thumbnails.take(i);
@@ -99,11 +98,12 @@ void HydrusThumbnailView::setItems(const QSet<qint64>& ids)
 
 	// Notify of change, and recalculate layout
 	PositionItems(this->size());
-	itemsChanged(m_thumbnails.keys().toSet());
+	itemsChanged(ids);
 }
 int HydrusThumbnailView::addItems(const QSet<qint64> &ids)
 {
-	auto idsToLoad = ids - m_thumbnails.keys().toSet();
+	auto loadedIds = m_thumbnails.keys().toSet();
+	auto idsToLoad = ids - loadedIds;
 
 	if (idsToLoad.isEmpty())
 		return 0;
@@ -118,19 +118,20 @@ int HydrusThumbnailView::addItems(const QSet<qint64> &ids)
 
 	// Notify of change, and recalculate layout
 	PositionItems(this->size());
-	itemsChanged(m_thumbnails.keys().toSet());
+	itemsChanged(loadedIds + idsToLoad);
 
 	return idsToLoad.count();
 }
 int HydrusThumbnailView::removeItems(const QSet<qint64> &ids)
 {
-	auto idsToUnload = ids & m_thumbnails.keys().toSet();
+	auto loadedIds = m_thumbnails.keys().toSet();
+	auto idsToUnload = loadedIds & ids;
 
 	if (idsToUnload.isEmpty())
 		return 0;
 
 	// If all the id's will be removed
-	if (idsToUnload.count() == ids.count())
+	if (idsToUnload.count() == loadedIds.count())
 	{
 		// Clear the scene
 		m_scene->clear();
@@ -148,7 +149,7 @@ int HydrusThumbnailView::removeItems(const QSet<qint64> &ids)
 
 	// Notify of change, and recalculate layout
 	PositionItems(this->size());
-	itemsChanged(m_thumbnails.keys().toSet());
+	itemsChanged(loadedIds - idsToUnload);
 
 	return idsToUnload.count();
 }
