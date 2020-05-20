@@ -1,6 +1,7 @@
 #ifndef HYDRUSTHUMBNAILITEM_H
 #define HYDRUSTHUMBNAILITEM_H
 
+#include "hydrusitem.h"
 #include <QGraphicsRectItem>
 #include <QGraphicsPixmapItem>
 
@@ -9,11 +10,11 @@
 class HydrusThumbnailItem : public QGraphicsRectItem
 {
 public:
-	HydrusThumbnailItem(qint64 id, QGraphicsItem* parent = nullptr);
+	HydrusThumbnailItem(CustomID id, QGraphicsItem* parent = nullptr);
 	~HydrusThumbnailItem();
 
-	qint64 id() const;
-	QList<qint64> tagIds() const;
+	CustomID id() const;
+	QList<char*> tagIds() const;
 protected:
 	// Context menu
 	void contextMenuEvent(QGraphicsSceneContextMenuEvent *event) override;
@@ -37,8 +38,8 @@ protected:
 	void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 	void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;private:
 private:
-	qint64 m_id;
-	QSet<qint64> m_tags;
+	CustomID m_id;
+	QSet<char*> m_tags;
 	QGraphicsPixmapItem* m_thumbnail;
 };
 

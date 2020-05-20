@@ -1,4 +1,4 @@
-#include "hydrusthumbnailview.h"
+#include "hydrusthumbnailscene.h"
 
 #include <QDebug>
 #include <QResizeEvent>
@@ -10,7 +10,7 @@
 HydrusThumbnailView::HydrusThumbnailView(const QRectF& sceneRect, QWidget* parent) :
 	QGraphicsView(parent),
 	m_itemSize(DEFAULT_WIDTH, DEFAULT_HEIGHT),
-	m_itemMargin(DEFAULT_SPACING)
+	m_itemSpacing(DEFAULT_SPACING)
 {
 	m_scene = new QGraphicsScene(sceneRect, this);
 	setScene(m_scene);
@@ -18,7 +18,7 @@ HydrusThumbnailView::HydrusThumbnailView(const QRectF& sceneRect, QWidget* paren
 HydrusThumbnailView::HydrusThumbnailView(const QRectF& sceneRect, const QSizeF& itemSize, qreal itemSpacing, QWidget* parent) :
 	QGraphicsView(parent),
 	m_itemSize(itemSize),
-	m_itemMargin(itemSpacing)
+	m_itemSpacing(itemSpacing)
 {
 	m_scene = new QGraphicsScene(sceneRect, this);
 	setScene(m_scene);
@@ -26,7 +26,7 @@ HydrusThumbnailView::HydrusThumbnailView(const QRectF& sceneRect, const QSizeF& 
 HydrusThumbnailView::HydrusThumbnailView(qreal scenePosX, qreal scenePosY, qreal sceneWidth, qreal sceneHeight, QWidget* parent) :
 	QGraphicsView(parent),
 	m_itemSize(DEFAULT_WIDTH, DEFAULT_HEIGHT),
-	m_itemMargin(DEFAULT_SPACING)
+	m_itemSpacing(DEFAULT_SPACING)
 {
 	m_scene = new QGraphicsScene(scenePosX, scenePosY, sceneWidth, sceneHeight, this);
 	setScene(m_scene);
@@ -34,7 +34,7 @@ HydrusThumbnailView::HydrusThumbnailView(qreal scenePosX, qreal scenePosY, qreal
 HydrusThumbnailView::HydrusThumbnailView(qreal scenePosX, qreal scenePosY, qreal sceneWidth, qreal sceneHeight, qreal itemWidth, qreal itemHeight, qreal itemSpacing, QWidget* parent) :
 	QGraphicsView(parent),
 	m_itemSize(itemWidth, itemHeight),
-	m_itemMargin(itemSpacing)
+	m_itemSpacing(itemSpacing)
 {
 	m_scene = new QGraphicsScene(scenePosX, scenePosY, sceneWidth, sceneHeight, this);
 	setScene(m_scene);
@@ -44,45 +44,36 @@ HydrusThumbnailView::~HydrusThumbnailView()
 {
 }
 
-void HydrusThumbnailView::setItemLayout(const QSizeF& size, qreal margin)
+void HydrusThumbnailView::setItemLayout(const QSizeF& size, qreal spacing)
 {
 	m_itemSize = size;
-	m_itemMargin = margin;
+	m_itemSpacing = spacing;
 }
 
-void HydrusThumbnailView::setItemLayout(qreal width, qreal height, qreal margin)
+void HydrusThumbnailView::setItemLayout(qreal width, qreal height, qreal spacing)
 {
 	m_itemSize = QSizeF(width, height);
-	m_itemMargin = margin;
+	m_itemSpacing = spacing;
 }
 
-QSizeF HydrusThumbnailView::getItemSize()
+void HydrusThumbnailView::setItems(const QSet<HydrusID>& ids)
 {
-	return m_itemSize;
-}
-
-qreal HydrusThumbnailView::getItemMargin()
-{
-	return m_itemMargin;
-}
-
-void HydrusThumbnailView::setItems(const QSet<qint64>& ids)
-{
-	auto loadedIds = m_thumbnails.keys().toSet();
+	auto loadedIds = m_idToIndexMap.keys().toSet();
 	auto idsToLoad = ids - loadedIds;
 
 	// If none of the items we are about to load are already here, then clear the data
 	if (idsToLoad.count() == ids.count())
 	{
 		m_scene->clear();
-		m_thumbnails.clear();
+		m_data.clear();
+		m_idToIndexMap.clear();
 	}
 	else
 	{
 		// else remove all id's that arent in the new ids array
-		for (qint64 i : (loadedIds - ids))
+		for (auto i : (loadedIds - ids))
 		{
-			auto item = m_thumbnails.take(i);
+			auto item = m_idToIndexMap.take(i);
 			m_scene->removeItem(item);
 			delete item;
 		}
@@ -102,7 +93,7 @@ void HydrusThumbnailView::setItems(const QSet<qint64>& ids)
 	PositionItems(this->size());
 	itemsChanged(ids);
 }
-int HydrusThumbnailView::addItems(const QSet<qint64> &ids)
+int HydrusThumbnailView::addItems(const QSet<HydrusID> &ids)
 {
 	auto loadedIds = m_thumbnails.keys().toSet();
 	auto idsToLoad = ids - loadedIds;
@@ -114,7 +105,7 @@ int HydrusThumbnailView::addItems(const QSet<qint64> &ids)
 	for (qint64 i : idsToLoad)
 	{
 		auto item = new HydrusThumbnailItem(i);
-		item->setRect(0,0,m_itemSize.width(),m_itemSize.height());
+		item->setRect(0,0,m_tileSize.width(),m_tileSize.height());
 		item->setBrush(Qt::black);
 		m_scene->addItem(item);
 		m_thumbnails.insert(i, item);
@@ -126,7 +117,7 @@ int HydrusThumbnailView::addItems(const QSet<qint64> &ids)
 
 	return idsToLoad.count();
 }
-int HydrusThumbnailView::removeItems(const QSet<qint64> &ids)
+int HydrusThumbnailView::removeItems(const QSet<HydrusID> &ids)
 {
 	auto loadedIds = m_thumbnails.keys().toSet();
 	auto idsToUnload = loadedIds & ids;
@@ -167,15 +158,21 @@ void HydrusThumbnailView::clearItems()
 		itemsChanged(m_thumbnails.keys().toSet());
 	}
 }
-QSet<qint64> HydrusThumbnailView::getItems() const
+QSet<HydrusID> HydrusThumbnailView::getItems() const
 {
 	return m_thumbnails.keys().toSet();
+}
+
+void HydrusThumbnailView::setupViewport(QWidget* widget)
+{
+	QGraphicsView::setupViewport(widget);
 }
 
 void HydrusThumbnailView::resizeEvent(QResizeEvent* event)
 {
 	if (event->type() == QResizeEvent::Type::Resize)
 	{
+		m_scene->setSceneRect(QRectF())
 		PositionItems(event->size());
 		qDebug() << "Window resized from" << event->oldSize() << "to" << event->size() << "Current:" << this->rect();
 	}
@@ -192,11 +189,11 @@ void HydrusThumbnailView::PositionAndScaleItems(const QSize& viewSize)
 	int nRows = 1;
 
 	// Item position offset values
-	qreal incValX = m_itemSize.width() + m_itemMargin;
-	qreal incValY = m_itemSize.height() + m_itemMargin;
+	qreal incValX = m_tileSize.width() + m_tileMargin;
+	qreal incValY = m_tileSize.height() + m_tileMargin;
 
 	// Minimum width of 1 row + margin
-	qreal minWidth = incValX + m_itemMargin;
+	qreal minWidth = incValX + m_tileMargin;
 
 	// If width is more than minimum then how many columns can we fit within it?
 	if (viewSize.width() > minWidth)
@@ -207,7 +204,7 @@ void HydrusThumbnailView::PositionAndScaleItems(const QSize& viewSize)
 
 	// Resize height to fit all items
 	nRows = (items.length() / nCols) + 1;
-	resize(width(), (incValY * nRows) + m_itemMargin);
+	resize(width(), (incValY * nRows) + m_tileMargin);
 
 	// Redraw all items
 	for (auto item : items)
@@ -216,10 +213,10 @@ void HydrusThumbnailView::PositionAndScaleItems(const QSize& viewSize)
 		item->setRect(
 					QRectF(
 						QPointF(
-							m_itemMargin + (incValX * col++),
-							m_itemMargin + (incValY * row)
+							m_tileMargin + (incValX * col++),
+							m_tileMargin + (incValY * row)
 							),
-						m_itemSize
+						m_tileSize
 						)
 					);
 
@@ -241,11 +238,11 @@ void HydrusThumbnailView::PositionItems(const QSize& viewSize)
 	int nRows = 1;
 
 	// Item position offset values
-	qreal incValX = m_itemSize.width() + m_itemMargin;
-	qreal incValY = m_itemSize.height() + m_itemMargin;
+	qreal incValX = m_tileSize.width() + m_tileMargin;
+	qreal incValY = m_tileSize.height() + m_tileMargin;
 
 	// Minimum width of 1 row + margin
-	qreal minWidth = incValX + m_itemMargin;
+	qreal minWidth = incValX + m_tileMargin;
 
 	// If width is more than minimum then how many columns can we fit within it?
 	if (viewSize.width() > minWidth)
@@ -265,15 +262,15 @@ void HydrusThumbnailView::PositionItems(const QSize& viewSize)
 
 		// Resize height to fit all items
 		nRows = (items.length() / nCols) + 1;
-		resize(width(), (incValY * nRows) + m_itemMargin);
+		resize(width(), (incValY * nRows) + m_tileMargin);
 
 		// Redraw all items
 		for (auto item : items)
 		{
 			// Position
 			item->setPos(
-						m_itemMargin + (incValX * col++),
-						m_itemMargin + (incValY * row)
+						m_tileMargin + (incValX * col++),
+						m_tileMargin + (incValY * row)
 						);
 
 			// If the next column exceeds the amount columns theres space for, then go back to column position 0

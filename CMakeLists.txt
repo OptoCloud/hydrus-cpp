@@ -154,28 +154,17 @@ message("QT system dir: ${QT_SYSTEM_DIR}\n")
 #endif()
 
 set(${project}_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/clientdb.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/hydrusanimation.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/hydrusimage.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/hydrusmedia.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/hydrusthumbnailitem.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/hydrusthumbnailview.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/hydrusvideo.cpp
-#    ${CMAKE_CURRENT_SOURCE_DIR}/imageutils.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/mainwindow.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/sha256.cpp
+	#${CMAKE_CURRENT_SOURCE_DIR}/clientdb.cpp
+	#${CMAKE_CURRENT_SOURCE_DIR}/imageutils.cpp
+	#${CMAKE_CURRENT_SOURCE_DIR}/hydrusthumbnailitem.cpp
+	#${CMAKE_CURRENT_SOURCE_DIR}/hydrusthumbnailscene.cpp
 )
 set(${project}_MOC
-    ${CMAKE_CURRENT_SOURCE_DIR}/clientdb.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/hydrusanimation.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/hydrusimage.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/hydrusmedia.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/hydrusthumbnailitem.h
-	${CMAKE_CURRENT_SOURCE_DIR}/hydrusthumbnailview.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/hydrusvideo.h
-#    ${CMAKE_CURRENT_SOURCE_DIR}/imageutils.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/mainwindow.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/sha256.h
+	#${CMAKE_CURRENT_SOURCE_DIR}/clientdb.h
+	${CMAKE_CURRENT_SOURCE_DIR}/hydrusitem.h
+	#${CMAKE_CURRENT_SOURCE_DIR}/imageutils.h
+	#${CMAKE_CURRENT_SOURCE_DIR}/hydrusthumbnailitem.h
+	#${CMAKE_CURRENT_SOURCE_DIR}/hydrusthumbnailscene.h
 )
 
 include_directories(${INCLUDE_DIRS})
