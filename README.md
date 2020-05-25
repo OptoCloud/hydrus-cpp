@@ -12,7 +12,6 @@
 | Framework | Qt | https://www.qt.io/ |
 | Database | SQLite | https://www.sqlite.org/index.html |
 | Image processing | OpenCV | https://opencv.org/ |
-| Image similarity finder | pHash | https://www.phash.org/ |
 | Serialization Library | Protobuf | https://developers.google.com/protocol-buffers |
 
 ## Installation
