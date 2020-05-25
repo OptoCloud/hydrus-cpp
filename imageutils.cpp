@@ -20,7 +20,7 @@ quint64 ImageUtils::ComputePHash(const cv::Mat& inputImage)
 		int maxDim = std::max(image.rows, image.cols);
 		if (maxDim > 1024)
 		{
-			float ratio = float(1024)/float(maxDim);
+			float ratio = 1024.f/(float)maxDim;
 
 			cv::resize(image, image, cv::Size(0, 0), ratio, ratio);
 		}
@@ -30,7 +30,7 @@ quint64 ImageUtils::ComputePHash(const cv::Mat& inputImage)
 		cv::Mat alpha;
 		cv::extractChannel(image, alpha, 3);
 		alpha.convertTo(alpha, CV_32F);
-		alpha /= 255.;
+		alpha /= 255.f;
 
         // Convert to grayscale
 		cv::Mat grayscale;
@@ -41,7 +41,7 @@ quint64 ImageUtils::ComputePHash(const cv::Mat& inputImage)
 		cv::Mat ones = cv::Mat::ones(size, CV_32FC1);
 
 		// Blend alpha with white, and set as image
-		cv::multiply(ones * 255., ones - alpha, image);
+		cv::multiply(ones * 255.f, ones - alpha, image);
 
 		// Blend alpha with grayscale and add to output
 		cv::multiply(grayscale,alpha,grayscale);
@@ -77,36 +77,37 @@ quint64 ImageUtils::ComputePHash(const cv::Mat& inputImage)
 	// Array of bytes that are either 0x00 or 0xFF
 	quint8* ptr = dct_bool.ptr<quint8>(0);
 
+	quint64 i = 64;
 	quint64 hash = 0;
 	// Iterates trough the 64 bytes and masks every byte to a bit in the 64 bit integer
-	for (quint64 i = 64; i > 0; i--)
-    {
-		// Mask byte to a bit
-		quint64 masked = *ptr & 1;
+	while (i-- > 0)
+	{
+		quint64 temp = *ptr;
 
-		// Shift bit into its position
-		hash |= masked << i;
-
-		// Increment by one byte
 		ptr++;
-    }
+
+		temp &= 1ULL;
+
+		temp <<= i;
+
+		hash |= temp;
+	}
 
 	return hash;
 }
-quint64 ImageUtils::HammingDistance(quint64 hash1, quint64 hash2)
+quint8 ImageUtils::HammingDistance(quint64 hash1, quint64 hash2)
 {
 	// Get which bits are different
 	quint64 diff = hash1 ^ hash2;
 
-	// Count the b
+	// Count bits which are different
 	return std::bitset<64>(diff).count();
 }
 
-#include "sha256.h"
 #include <QByteArray>
 QByteArray ImageUtils::ComputeSha256(const cv::Mat& image)
 {
-	Hashing::Sha256 hash;
-	hash.update(image.data, image.total() * image.elemSize());
-	return hash.result();
+	//Hashing::Sha256 hash;
+	//hash.update(image.data, image.total() * image.elemSize());
+	return QByteArray();//hash.result();
 }

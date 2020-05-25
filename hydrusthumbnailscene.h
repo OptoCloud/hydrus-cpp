@@ -10,7 +10,7 @@
 #include <QBoxLayout>
 #include <QGraphicsView>
 #include <QGraphicsScene>
-#include "hydrusitem.h"
+#include "hydrusid.h"
 #include "hydrusthumbnailitem.h"
 
 class HydrusThumbnailView : public QGraphicsView
@@ -29,28 +29,28 @@ public:
 	QSizeF getItemSize() const { return m_itemSize; }
 	qreal  getItemSpacing() const { return m_itemSpacing; }
 
-	void setItems(const QSet<CustomID>& ids);
-	int addItems(const QSet<CustomID>& ids);
-	int removeItems(const QSet<CustomID>& ids);
+	void setItems(const QSet<HydrusID>& ids);
+	int addItems(const QSet<HydrusID>& ids);
+	int removeItems(const QSet<HydrusID>& ids);
 	void clearItems();
-	QSet<CustomID> getItems() const;
+	QSet<HydrusID> getItems() const;
 
 	void setupViewport(QWidget *widget) override;
 protected:
 	void resizeEvent(QResizeEvent *event) override;
 signals:
-	void itemsChanged(const QSet<CustomID>& list);
-	void itemFocused(CustomID id);
-	void itemClicked(CustomID id);
-	void itemLeftClicked(CustomID id);
-	void itemDoubleClicked(CustomID id);
+	void itemsChanged(const QSet<HydrusID>& list);
+	void itemFocused(HydrusID id);
+	void itemClicked(HydrusID id);
+	void itemLeftClicked(HydrusID id);
+	void itemDoubleClicked(HydrusID id);
 private slots:
 	void refreshView(const QRectF& view);
 private:
 	QSizeF m_itemSize;
 	qreal  m_itemSpacing;
 	QList<HydrusThumbnailItem*> m_data;
-	QMap<CustomID, int> m_idToIndexMap;
+	QMap<HydrusID, int> m_idToIndexMap;
 	QGraphicsScene* m_scene;
 };
 

@@ -8,8 +8,8 @@
 namespace ImageUtils
 {
 quint64 ComputePHash(const cv::Mat& image);
+quint8 HammingDistance(quint64 hash1, quint64 hash2);
 QByteArray ComputeSha256(const cv::Mat& image);
-quint64 HammingDistance(quint64 hash1, quint64 hash2);
 }
 
 #endif // IMAGEUTILS_H

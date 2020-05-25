@@ -1,8 +1,13 @@
 #include <QApplication>
 #include <QSet>
 
+#include <QDebug>
 //#include "hydrusthumbnailscene.h"
-#include "hydrusitem.h"
+#include "hydrusid.h"
+#include "imageutils.h"
+#include "opencv2/core.hpp"
+#include "opencv2/highgui.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
 
 #define DEFAULT_WIDTH 150
 #define DEFAULT_HEIGHT 125
@@ -28,14 +33,17 @@ int main(int argc, char **argv)
 
 	std::sort(ids.begin(), ids.end());
 
-	char c[24];
+	char c[25];
 	for (HydrusID id : ids)
 	{
 		id.idCStr(c);
 		printf("%s\n", c);
-		memset(c, 0, 24);
+		memset(c, 0, 25);
 	}
 
+	auto img = cv::imread("test.jpg", cv::IMREAD_UNCHANGED);
+
+	ImageUtils::ComputePHash(img);
 
 	/*auto page = new HydrusThumbnailView(0,0,1000,500);
 
