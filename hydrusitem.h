@@ -20,25 +20,25 @@ public:
 	}
 	HydrusID(const HydrusID& id)
 	{
-		memcpy(const_cast<uint32_t*>(id.data), this->data, 12);
+		memcpy(this->data, id.data, 12);
 	}
 	HydrusID(const char* id)
 	{
 		for (int i = 0; i < 3; i++)
 		{
-			data[i]  = ((id[i * 8    ] - 'a') << 28) & 0xF0000000;
-			data[i] |= ((id[i * 8 + 1] - 'a') << 24) & 0x0F000000;
-			data[i] |= ((id[i * 8 + 2] - 'a') << 20) & 0x00F00000;
-			data[i] |= ((id[i * 8 + 3] - 'a') << 16) & 0x000F0000;
-			data[i] |= ((id[i * 8 + 4] - 'a') << 12) & 0x0000F000;
-			data[i] |= ((id[i * 8 + 5] - 'a') <<  8) & 0x00000F00;
-			data[i] |= ((id[i * 8 + 6] - 'a') <<  4) & 0x000000F0;
-			data[i] |= ((id[i * 8 + 7] - 'a')      ) & 0x0000000F;
+			data[i]  = ((id[i * 8    ] - 'a') & 0xF) << 28;
+			data[i] |= ((id[i * 8 + 1] - 'a') & 0xF) << 24;
+			data[i] |= ((id[i * 8 + 2] - 'a') & 0xF) << 20;
+			data[i] |= ((id[i * 8 + 3] - 'a') & 0xF) << 16;
+			data[i] |= ((id[i * 8 + 4] - 'a') & 0xF) << 12;
+			data[i] |= ((id[i * 8 + 5] - 'a') & 0xF) << 8;
+			data[i] |= ((id[i * 8 + 6] - 'a') & 0xF) << 4;
+			data[i] |= ((id[i * 8 + 7] - 'a') & 0xF);
 		}
 	}
 	HydrusID(const uint8_t* id)
 	{
-		memcpy(const_cast<uint8_t*>(id), this->data, 12);
+		memcpy(this->data, id, 12);
 	}
 
 	void idCStr(char* c_str) const
@@ -57,7 +57,7 @@ public:
 	}
 	void idDat(uint8_t* data) const
 	{
-		memcpy(const_cast<uint32_t*>(this->data), data, 12);
+		memcpy(data, this->data, 12);
 	}
 
 	bool operator==(const HydrusID& other) const
