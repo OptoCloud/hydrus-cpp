@@ -1,175 +1,218 @@
-cmake_minimum_required( VERSION 3.10 )
+cmake_minimum_required (VERSION 3.5)
 
-set(project hydrus)
-project(${project})
-cmake_policy(SET CMP0071 NEW)
-
-add_compile_options(
-	-Wall
-	-Wextra
-	-pedantic
-	-Wunreachable-code
-	-Wcast-align
-	-Wcast-qual
-	-Wdisabled-optimization
-	-Wformat=2
-	-Winit-self
-	-Wmissing-declarations
-	-Wmissing-include-dirs
-	-Wredundant-decls
-	-Wold-style-cast
-	-Woverloaded-virtual
-	-Wshadow
-	-Wsign-conversion
-	-Wstrict-overflow=5
-	-Wswitch-default
-	-Wundef
-	#-Werror
-	-Wno-unused
-	-Wno-variadic-macros
-	-Wswitch-enum
-	-fstack-protector
-	-D_FORTIFY_SOURCE=2
-	-fPIC
-	)
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	add_compile_options(
-		-fmax-errors=5
-		-Wlogical-op
-		-Wnoexcept
-		-Wstrict-null-sentinel
-		-Wimplicit-fallthrough=3
-		-foptimize-strlen
-		-fdiagnostics-color
-		)
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-	add_compile_options(
-		# Clang doesn't like qCDebug():
-		-Wno-gnu-zero-variadic-macro-arguments
-		)
-endif()
-
-if(UNIX AND NOT APPLE)
-    set(LINUX TRUE)
-endif()
-
-if (LINUX)
-    list(APPEND LIBRARY_DIRS /usr/lib /usr/local /usr/local/lib)
-endif ()
-message("\n")
-
-# ---OpenCV---
-find_package(OpenCV 4.2.0 REQUIRED)
-if (NOT OpenCV_FOUND)
-	message(FATAL_ERROR "No OpenCV installation found, aborting")
-endif()
-list(APPEND OpenCV_LIBS)
-message("Found OpenCV ${OpenCV_VERSION}")
-message("Includes:\t\t${OpenCV_INCLUDE_DIRS}")
-message("Libraries:\t\t${OpenCV_LIBS}\n")
-list(APPEND LIBRARIES ${OpenCV_LIBS})
-list(APPEND INCLUDE_DIRS ${OpenCV_DIRS})
-
-# ---Eigen---
-find_package(Eigen3 REQUIRED)
-if (NOT Eigen3_FOUND)
-	message(FATAL_ERROR "No Eigen3 installation found, aborting")
-endif()
-message("Found Eigen ${Eigen3_VERSION}\n")
-
-# ---Qt---
-find_package(Qt5 COMPONENTS Core Gui Concurrent OpenGL Test Sql Multimedia MultimediaWidgets REQUIRED)
-if (NOT Qt5Core_FOUND)
-    message(FATAL_ERROR "No Qt installation found, aborting")
-endif()
-set(Qt5_VERSION ${Qt5Core_VERSION})
-set(Qt5_LIBS ${Qt5Core_LIBRARIES} ${Qt5Gui_LIBRARIES} ${Qt5OpenGL_LIBRARIES} ${Qt5Test_LIBRARIES} ${Qt5Sql_LIBRARIES} ${Qt5Multimedia_LIBRARIES} ${Qt5MultimediaWidgets_LIBRARIES})
-set(Qt5_DIRS ${Qt5Core_INCLUDE_DIRS} ${Qt5Gui_INCLUDE_DIRS} ${Qt5OpenGL_INCLUDE_DIRS} ${Qt5TestLib_INCLUDE_DIRS} ${Qt5Sql_INCLUDE_DIRS} ${Qt5Multimedia_INCLUDE_DIRS} ${Qt5MultimediaWidgets_INCLUDE_DIRS})
-message("Found Qt ${Qt5_VERSION}")
-message("Includes:\t\t${Qt5_DIRS}")
-message("Libraries:\t\t${Qt5_LIBS}\n")
-list(APPEND LIBRARIES ${Qt5_LIBS})
-list(APPEND INCLUDE_DIRS ${Qt5_DIRS})
-
-# ---FPIC---
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-# ^ Should replace:
-#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -g")
-
-# ---Build specific---
-if(NOT ${CMAKE_BUILD_TYPE} MATCHES "Release")
-    message("Building with no optimization (Debug build)\n")
-
-    # ---Debug mode---
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 --verbose")
-
-    # ---Qt Debugging---
-    if(CMAKE_COMPILER_IS_GNUCXX)
-        set( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -w -Wall -Wextra -Wstrict-aliasing -pedantic -fmax-errors=5 -Wunreachable-code -Wcast-align -Wcast-qual -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wstrict-null-sentinel -Wstrict-overflow=5 -Wswitch-default -Wno-unused -Wno-variadic-macros -Wno-parentheses -fdiagnostics-show-option")
-    endif()
-else()
-    message("Building with full optimization (Release build)\n")
-
-    # ---Optimization---
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
-endif()
-
-# ---Qt---
-get_target_property (QT_QMAKE_EXECUTABLE Qt5::qmake IMPORTED_LOCATION)
-macro(qt_add_resources)
-   qt5_add_resources(${ARGN})
-endmacro()
-macro(qt_wrap_cpp)
-    qt5_wrap_cpp(${ARGN})
-endmacro()
-macro(qt_wrap_ui)
-    qt5_wrap_ui(${ARGN})
-endmacro()
-set(CMAKE_AUTOMOC on)
-list(APPEND INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
-# get QT's directory
-execute_process(
-    COMMAND bash "-c" "qtchooser -print-env | grep QTLIBDIR | cut -d \"=\" -f2 |tr -d '\"' | tr -d '\\n'"
-    COMMENT Fetching QT install directory
-    OUTPUT_VARIABLE QT_SYSTEM_DIR
+set (project hydrus)
+project (
+    ${project}
+    DESCRIPTION "Hydrus rewritten in C++"
+    LANGUAGES CXX
 )
-message("QT system dir: ${QT_SYSTEM_DIR}\n")
+
+option(VERBOSE "Verbose compiler output" OFF)
+
+# --- Configure default build ---
+set (default_build_type "Release")
+if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    message (STATUS "Setting build type to '${default_build_type}' as none was specified.")
+    set (CMAKE_BUILD_TYPE "${default_build_type}" CACHE STRING "Choose the type of build." FORCE)
+    set_property (CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif ()
+# --------------------------------
+
+# --- Simplify build checking ---
+math (EXPR VPTR_BITS "${CMAKE_SIZEOF_VOID_P}*8") # Convert 4/8 -> 32/64
+
+if (APPLE)
+    set (BUILD_OS "osx")
+elseif (UNIX)
+    set (BUILD_OS "linux")
+elseif (WIN32)
+    set (BUILD_OS "windows")
+endif ()
+
+string (TOLOWER ${CMAKE_CXX_COMPILER_ID} BUILD_COMPILER)
+
+# Translate some stuff
+if (${BUILD_COMPILER} STREQUAL "gnu")
+  set (BUILD_COMPILER "gcc")
+elseif (${BUILD_COMPILER} STREQUAL "intel")
+  set (BUILD_COMPILER "icc")
+endif ()
+# --------------------------------
+
+# --- Set global C++ CMake settings ---
+set (CMAKE_CXX_STANDARD 20)
+set (CMAKE_CXX_EXTENSIONS OFF)
+set (CMAKE_CXX_STANDARD_REQUIRED ON)
+set (CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set (CMAKE_POSITION_INDEPENDENT_CODE ON)
+set (CMAKE_POLICY_DEFAULT_CMP0069 NEW)
+set (CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+if (VERBOSE)
+    set (CMAKE_VERBOSE_MAKEFILE ON)
+endif ()
+# -------------------------------
+
+# --- Set compiler flags ---
+# Debugging, and warnings
+add_definitions (-DBUILDER_STATIC_DEFINE)
+if (NOT ${CMAKE_BUILD_TYPE} MATCHES "Release")
+    add_definitions (-DDEBUG)
+    set (BUILD_TYPE "dbg")
+
+    if (MSVC)
+        # Remove all previously declared flags before adding new ones
+        string (REGEX REPLACE "[/-]W[0-4] ?" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+
+        # Verboseeeee
+        #string (APPEND CMAKE_CXX_FLAGS " /Wall")
+    else ()
+        # Verboseeeee
+        string (APPEND CMAKE_CXX_FLAGS " -Wall -Wextra -pedantic -Wformat=2 -Wsign-conversion -Wundef -Wredundant-decls -Wwrite-strings -Wpointer-arith -Wcast-qual -Wmissing-include-dirs -Wcast-align -Wctor-dtor-privacy -Wdisabled-optimization -Winvalid-pch -Woverloaded-virtual -Wconversion -Wswitch-enum -Wno-ctor-dtor-privacy -Wno-format-nonliteral -Wnoexcept -Wno-dangling-else -Wno-unused-local-typedefs -Wdouble-promotion -Wtrampolines -Wzero-as-null-pointer-constant -Wuseless-cast -Wvector-operation-performance -Wsized-deallocation -Wshadow -Wshift-overflow=2 -Wnull-dereference -Wduplicated-cond -Wpessimizing-move -Wredundant-move")
+    endif ()
+else ()
+    set (BUILD_TYPE "rel")
+endif ()
+
+# Optimization and compiler specific fixes
+if (MSVC)
+    # Remove all previously declared flags before adding new ones
+    string (REGEX REPLACE "[/-][ML][DT]d? ?" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+    string (REGEX REPLACE "[/-]O[12bdgistxy] ?" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+    string (REGEX REPLACE "[/-]DEBUG:[a-zA-Z]+ ?" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+
+    # Enable max warnings (But dont spam the console)
+    string (APPEND CMAKE_CXX_FLAGS " /DNOMINMAX /wo5054")
+
+    if (${CMAKE_BUILD_TYPE} MATCHES "Release")
+        string (APPEND CMAKE_CXX_FLAGS " /MD /DEBUG:NONE /O2 /Ob2")
+    else ()
+        string (APPEND CMAKE_CXX_FLAGS " /MDd /DEBUG:FULL /Od /Ob0")
+    endif ()
+else ()
+    # 64-bit, and threading
+    string (APPEND CMAKE_CXX_FLAGS " -m64 -pthread")
+
+    if (${CMAKE_BUILD_TYPE} MATCHES "Release")
+        string (APPEND CMAKE_CXX_FLAGS " -fstack-protector -O3 -g0")
+        if (NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            string (APPEND CMAKE_CXX_FLAGS " -s")
+        endif ()
+    else ()
+        string (APPEND CMAKE_CXX_FLAGS " -O0 -g3")
+    endif ()
+endif ()
+# --------------------------
+
+# -- Set global libraries --
+if (WIN32)
+    set (WIN_LIBS ws2_32 winmm Rpcrt4 Iphlpapi)
+endif ()
+
+set (THREADS_PREFER_PTHREAD_FLAG ON)
+find_package (Threads REQUIRED)
+
+link_libraries (
+    Threads::Threads
+    ${CMAKE_DL_LIBS}
+    ${WIN_LIBS}
+)
+# --------------------------
+
+# - Find and configure Qt --
+find_package (
+    Qt5
+    COMPONENTS
+        Core
+        Gui
+        Test
+        OpenGL
+        Widgets
+        Multimedia
+        MultimediaWidgets
+        Concurrent
+        Network
+        Sql
+    REQUIRED
+)
+if (NOT Qt5Core_FOUND)
+    message (FATAL_ERROR "No Qt installation found, aborting")
+endif ()
+
+set (CMAKE_AUTOUIC ON)
+set (CMAKE_AUTOMOC ON)
+set (CMAKE_AUTORCC ON)
+
+message ("Found Qt ${Qt5Core_VERSION}")
+# --------------------------
+
+# -------- Dependencies ---------
+find_package (OpenCV REQUIRED CONFIG)
+include_directories (${OpenCV_INCLUDE_DIRS})
+# -------------------------------
 
 if (LINUX)
 	# ZLib
-	list(APPEND LIBRARIES z)
+        list (APPEND LIBRARIES z)
 	# OpenEXR
-	list(APPEND LIBRARIES IlmImf)
+        list (APPEND LIBRARIES IlmImf)
 	# Image parsing and processing
-	list(APPEND LIBRARIES png16 jpeg tiff)
-	# Intel
-	list(APPEND LIBRARIES tbb)
-	# Dynamic linking
-	list(APPEND LIBRARIES dl)
-elseif(WIN32)
+        list (APPEND LIBRARIES png16 jpeg tiff)
+endif ()
 
-endif()
-
-set(${project}_SOURCES
+set (${project}_SOURCES
 	${CMAKE_CURRENT_SOURCE_DIR}/clientdb.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/imageutils.cpp
 	#${CMAKE_CURRENT_SOURCE_DIR}/hydrusthumbnailitem.cpp
 	#${CMAKE_CURRENT_SOURCE_DIR}/hydrusthumbnailscene.cpp
 )
-set(${project}_MOC
+set (${project}_HEADERS
 	${CMAKE_CURRENT_SOURCE_DIR}/clientdb.h
 	${CMAKE_CURRENT_SOURCE_DIR}/hydrusid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/imageutils.h
 	#${CMAKE_CURRENT_SOURCE_DIR}/hydrusthumbnailitem.h
 	#${CMAKE_CURRENT_SOURCE_DIR}/hydrusthumbnailscene.h
 )
+set (${project}_RESOURCES
+        #${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc
+)
 
-include_directories(${INCLUDE_DIRS})
-link_directories(${LIBRARY_DIRS})
-add_executable(${project} main.cpp ${${project}_SOURCES} ${${project}_MOC})
-set_target_properties(${project} PROPERTIES COMPILE_FLAGS -DBUILDER_STATIC_DEFINE)
-target_link_libraries(${project} ${LIBRARIES})
-message("Building to ${CMAKE_CURRENT_BINARY_DIR}")
+include_directories (
+    ${Qt5Core_INCLUDE_DIRS}
+    ${Qt5Gui_INCLUDE_DIRS}
+    ${Qt5Test_INCLUDE_DIRS}
+    ${Qt5OpenGL_INCLUDE_DIRS}
+    ${Qt5Widgets_INCLUDE_DIRS}
+    ${Qt5Multimedia_INCLUDE_DIRS}
+    ${Qt5MultimediaWidgets_INCLUDE_DIRS}
+    ${Qt5Concurrent_INCLUDE_DIRS}
+    ${Qt5Network_INCLUDE_DIRS}
+    ${Qt5Sql_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+add_executable (${project}
+    main.cpp
+    ${${project}_HEADERS}
+    ${${project}_SOURCES}
+    ${${project}_RESOURCES}
+)
+
+target_link_libraries (${project} PRIVATE
+    ${Qt5Core_LIBRARIES}
+    ${Qt5Gui_LIBRARIES}
+    ${Qt5Test_LIBRARIES}
+    ${Qt5OpenGL_LIBRARIES}
+    ${Qt5Widgets_LIBRARIES}
+    ${Qt5Multimedia_LIBRARIES}
+    ${Qt5MultimediaWidgets_LIBRARIES}
+    ${Qt5Concurrent_LIBRARIES}
+    ${Qt5Network_LIBRARIES}
+    ${Qt5Sql_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+)
+
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    set_property (TARGET ${project} PROPERTY WIN32_EXECUTABLE TRUE)
+endif ()
+
