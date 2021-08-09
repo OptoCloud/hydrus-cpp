@@ -1,104 +1,135 @@
 #include "imageutils.h"
 
 #include <QFile>
-#include <QDebug>
-#include <bitset>
+
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 
-quint64 ImageUtils::ComputePHash(const cv::Mat& inputImage)
+#include <iostream>
+#include <bitset>
+
+cv::Size ImageUtils::LimitToBounds(const cv::Size& imageRes, const cv::Size& boundingRes)
 {
-	cv::Mat image;
-	inputImage.copyTo(image);
+    if (boundingRes.width >= imageRes.width && boundingRes.height >= imageRes.height)
+    {
+        return imageRes;
+    }
 
-	// Remove alpha if neccesary
-	switch (image.channels()) {
-	case 4:
-	{
-		// Resize to conserve ram
-		int maxDim = std::max(image.rows, image.cols);
-		if (maxDim > 1024)
-		{
-			float ratio = 1024.f/(float)maxDim;
+    cv::Size thumbnailRes = boundingRes;
 
-			cv::resize(image, image, cv::Size(0, 0), ratio, ratio);
-		}
-		cv::Size size(image.cols, image.rows);
+    if (imageRes.width > imageRes.height) {
+        int height = imageRes.height * ((float)boundingRes.width / (float)imageRes.width);
 
-		// Get alpha
-		cv::Mat alpha;
-		cv::extractChannel(image, alpha, 3);
-		alpha.convertTo(alpha, CV_32F);
-		alpha /= 255.f;
+        thumbnailRes.height = std::max(height, 1);
+        thumbnailRes.width = std::max(thumbnailRes.width, 1);
+    }
+    else if (imageRes.height > imageRes.width) {
+        int width = imageRes.width * ((float)boundingRes.height / (float)imageRes.height);
 
-        // Convert to grayscale
-		cv::Mat grayscale;
-        cv::cvtColor(image, grayscale, cv::COLOR_BGR2GRAY);
-		grayscale.convertTo(grayscale, CV_32FC1);
+        thumbnailRes.width = std::max(width, 1);
+        thumbnailRes.height = std::max(thumbnailRes.height, 1);
+    }
 
-		// Create white canvas
-		cv::Mat ones = cv::Mat::ones(size, CV_32FC1);
+    return thumbnailRes;
+}
 
-		// Blend alpha with white, and set as image
-		cv::multiply(ones * 255.f, ones - alpha, image);
+void ImageUtils::ResizeCVMat(const cv::Mat& input, cv::Mat& output, const cv::Size& targetResolution)
+{
+    cv::Size imageRes(input.cols, input.rows);
 
-		// Blend alpha with grayscale and add to output
-		cv::multiply(grayscale,alpha,grayscale);
-		image += grayscale;
-		break;
-	}
-	case 3:
-        cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
-		image.convertTo(image, CV_32F);
-		break;
-	case 1:
-		break;
-	default:
-		return 0;
-	}
+    if (targetResolution == imageRes) {
+        output = input.clone();
+    }
+
+    cv::InterpolationFlags interpolation;
+    if (targetResolution.width > imageRes.width || targetResolution.height > imageRes.height) {
+        interpolation = cv::INTER_LANCZOS4;
+    } else {
+        interpolation = cv::INTER_AREA;
+    }
+
+    cv::resize(input, output, targetResolution, interpolation);
+}
+
+std::uint64_t ImageUtils::ComputePHash(const cv::Mat& image)
+{
+    // Convert to grayscale
+    cv::Mat grayscale;
+    cv::cvtColor(image, grayscale, cv::COLOR_RGB2GRAY);
+
+    // If we have a alpha channel as well, we gotta do some stuff to apply that to the grayscale result
+    if (image.channels() == 4) {
+        // Get alpha
+        cv::Mat alpha;
+        cv::extractChannel(image, alpha, 3);
+
+        // Get alpha normalized (0.0 - 1.0)
+        cv::Mat alpha_normalized = alpha / 255.f;
+
+        // Get inverse of alpha (0.0 - 255.0)
+        cv::Mat alpha_inverted = 255.f - alpha;
+
+        // Blend alpha with grayscale
+        cv::multiply(grayscale, alpha_normalized, grayscale);
+
+        // Image is a result of the inverted alpha plus the greyscale
+        cv::add(grayscale, alpha_inverted, grayscale);
+    }
 
 	// Crunch it down
-	cv::resize(image,image,cv::Size(32,32), cv::INTER_AREA);
+    cv::Mat tiny;
+    cv::resize(grayscale, tiny, cv::Size(32,32), cv::INTER_AREA);
+
+    // DCT cant be done with u8 matrix, Weird!
+    tiny.convertTo(tiny, CV_32FC1);
 
 	// Convert to dct
-	cv::dct(image, image);
+    cv::Mat dct;
+    cv::dct(tiny, dct);
+    dct.convertTo(dct, CV_8UC1);
 
 	// Get region of intrest
-	image(cv::Rect(0,0,8,8)).copyTo(image);
+    cv::Mat dct_88 = dct(cv::Rect(0,0,8,8));
+    cv::imwrite("dct_88.png", dct_88);
 
-	// Get mean color of roi
-	cv::Scalar meanColor = cv::mean(image.reshape(1,1)(cv::Rect(1,0,63,1)));
-	cv::Mat meanMat = cv::Mat(8,8,CV_32F,meanColor);
+    // Get mean color of matrix (except [0,0] which we will exclude because it represents flat colour)
+    std::uint8_t mean = 0;
+    for (int y = 0; y < 8; y++) {
+        for (int x = 1; x < 8; x++) {
+            int idx = (y * dct_88.step) + x;
 
-	// Convert roi to bool map
-	cv::Mat dct_bool = image > meanMat;
+            mean += dct_88.data[idx];
+        }
+    }
+    mean /= 63; // Average out the accumulated numbers
 
-	// Array of bytes that are either 0x00 or 0xFF
-	quint8* ptr = dct_bool.ptr<quint8>(0);
+    // Set bits compared to their index in the 8x8 matrix
+    std::uint64_t phash = 0;
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            int idx = (y * dct_88.step) + x;
 
-	quint64 i = 64;
-	quint64 hash = 0;
-	// Iterates trough the 64 bytes and masks every byte to a bit in the 64 bit integer
-	while (i-- > 0)
-	{
-		quint64 temp = *ptr;
+            // If the pixel is more than the average, set the value to 1, else 0
+            std::uint64_t isMoreThanAverage = dct_88.data[idx] > mean;
 
-		ptr++;
+            // Shift the bit into the correct place for this index
+            isMoreThanAverage <<= (y * 8) + x;
 
-		temp &= 1ULL;
+            // Set the bit in the hash
+            phash |= isMoreThanAverage;
+        }
+    }
 
-		temp <<= i;
+    std::cout << std::hex << phash << std::dec << std::endl;
 
-		hash |= temp;
-	}
-
-	return hash;
+    return phash;
 }
-quint8 ImageUtils::HammingDistance(quint64 hash1, quint64 hash2)
+
+std::uint8_t ImageUtils::HammingDistance(std::uint64_t hash1, std::uint64_t hash2)
 {
 	// Get which bits are different
-	quint64 diff = hash1 ^ hash2;
+    std::uint64_t diff = hash1 ^ hash2;
 
 	// Count bits which are different
 	return std::bitset<64>(diff).count();

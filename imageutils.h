@@ -7,8 +7,10 @@
 
 namespace ImageUtils
 {
-quint64 ComputePHash(const cv::Mat& image);
-quint8 HammingDistance(quint64 hash1, quint64 hash2);
+cv::Size LimitToBounds(const cv::Size& imageRes, const cv::Size& boundingRes);
+void ResizeCVMat(const cv::Mat& input, cv::Mat& output, const cv::Size& targetResolution);
+std::uint64_t ComputePHash(const cv::Mat& image);
+std::uint8_t HammingDistance(std::uint64_t hash1, std::uint64_t hash2);
 QByteArray ComputeSha256(const cv::Mat& image);
 }
 

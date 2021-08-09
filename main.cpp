@@ -34,16 +34,18 @@ int main(int argc, char **argv)
 	std::sort(ids.begin(), ids.end());
 
 	char c[25];
-	for (HydrusID id : ids)
+    for (const HydrusID& id : ids)
 	{
 		id.idCStr(c);
 		printf("%s\n", c);
 		memset(c, 0, 25);
 	}
 
-	auto img = cv::imread("test.jpg", cv::IMREAD_UNCHANGED);
+    auto img = cv::imread("test.png", cv::IMREAD_UNCHANGED);
 
-	ImageUtils::ComputePHash(img);
+    ImageUtils::ResizeCVMat(img, img, ImageUtils::LimitToBounds({img.cols, img.rows}, {1024, 1024}));
+
+    ImageUtils::ComputePHash(img);
 
 	/*auto page = new HydrusThumbnailView(0,0,1000,500);
 
